@@ -1,0 +1,82 @@
+---
+title: 'Manuscript 1: Adult Health Effects'
+author: "Elizabeth Chase"
+date: "8/8/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE, echo=TRUE}
+library(knitr)
+opts_chunk$set(collapse=TRUE, fig.align='center', out.extra = '', fig.pos= "h", tidy=TRUE, tidy.opts=list(blank=TRUE, width.cutoff=40), warning=FALSE,message=FALSE)
+options(scipen=999)
+
+rm(list=ls())
+
+library(tidyverse)
+library(gridExtra)
+library(RColorBrewer)
+library(tableone)
+library(latex2exp)
+library(labelled)
+library(kableExtra)
+library(tigris)
+library(sf)
+library(spdep)
+
+mydata <- readRDS("~/Desktop/Research/Jerel Flint/Analyses/adult_data_clean.rds")
+```
+
+We start by selecting our sample and assembling some baseline tables and figures:
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+mydata_complete <- filter(mydata, !is.na(age), !is.na(reth), !is.na(marital_status), !is.na(educ_level), !is.na(public_benefits), !is.na(gender), !is.na(confidants2), !is.na(years_cityflint), !is.na(noticed_water_issue), !is.na(current_zip), !is.na(blood_test_after_april_2014), !is.na(blood_test_before_april_2014), !is.na(elevated_lead_before_april_2014), !is.na(elevated_lead_after_april_2014), !is.na(rashes_before_april_2014), !is.na(rashes_after_april_2014), !is.na(hairloss_before_april_2014), !is.na(hairloss_after_april_2014), !is.na(nausea_before_april_2014), !is.na(nausea_after_april_2014), !is.na(irritable_before_april_2014), !is.na(irritable_after_april_2014), !is.na(ptsdscore), !is.na(phq), gender != "Transgender Woman")
+
+zcta1 <- zctas(cb = TRUE, starts_with = c("4850", "48532"), class = "sf") %>% filter(ZCTA5CE10 != "48509")
+flintdat <- data.frame("zip" = zcta1$ZCTA5CE10, "geometry" = zcta1$geometry)
+
+fils <- unzip("~/Desktop/Research/Jerel Flint/Analyses/tl_2019_26_place.zip")
+flint_boundary <- st_read(fils[4]) %>% filter(NAME=="Flint")
+
+totalpop <- data.frame(table(mydata_complete$current_zip))
+colnames(totalpop) <- c("current_zip", "pop")
+
+flintdat2 <- full_join(flintdat, totalpop, by=c("zip" = "current_zip")) 
+flintdat2$pop <- factor(flintdat2$pop)
+
+popmap <- ggplot(data=flintdat2) + geom_sf(data=flintdat2, aes(geometry = geometry, fill = pop), size=0, alpha = 0.6) + geom_sf(data=flint_boundary, aes(geometry=geometry), fill=NA) + geom_sf_label(aes(geometry = geometry, label = paste0(pop)), label.size = 0.02) + xlab(" ") + ylab(" ") + theme(rect = element_blank(), axis.ticks = element_blank(), axis.line=element_blank(),axis.text.x=element_blank(), axis.text.y=element_blank(), legend.position = "none") + ggtitle("Number of Respondents Per Zipcode") 
+
+popmap
+
+mydata_complete$collapsemarital <- case_when(
+  mydata_complete$marital_status=="Single (never married)" ~ "Single (never married)",
+  mydata_complete$marital_status=="Married" ~ "Married", 
+  mydata_complete$marital_status=="Separated" | mydata_complete$marital_status=="Divorced" | mydata_complete$marital_status=="Widowed" ~ "Separated"
+)
+
+var_label(mydata_complete$collapseeduc) <- "Education level"
+var_label(mydata_complete$public_benefits) <- "Receives public benefits"
+var_label(mydata_complete$collapsemarital) <- "Marital status"
+var_label(mydata_complete$noticed_water_issue2) <- "How long after water switch to notice water issue?"
+var_label(mydata_complete$blood_test_after_april_2014) <- "Received blood lead test"
+var_label(mydata_complete$elevated_lead_after_april_2014) <- "Had elevated lead"
+var_label(mydata_complete$rashes_after_april_2014) <- "Had rashes"
+var_label(mydata_complete$hairloss_after_april_2014) <- "Had hair loss"
+var_label(mydata_complete$nausea_after_april_2014) <- "Had nausea"
+var_label(mydata_complete$irritable_after_april_2014) <- "Was irritable"
+var_label(mydata_complete$ptsdscore) <- "PC-PTSD-5 score"
+var_label(mydata_complete$phq) <- "PHQ-4 score"
+
+table_predictors <- CreateTableOne(vars=c("age", "gender", "collapseeduc", "public_benefits", "collapsemarital", "years_cityflint", "confidants2"), strata = "collapserace", data=mydata_complete, argsNormal = list(NULL), argsNonNormal = list(var.equal = TRUE))
+
+table_outcomes <- CreateTableOne(vars=c("noticed_water_issue2", "blood_test_after_april_2014", "elevated_lead_after_april_2014", "rashes_after_april_2014", "hairloss_after_april_2014", "nausea_after_april_2014", "irritable_after_april_2014", "ptsdscore", "phq"), strata = "collapserace", data=mydata_complete, argsNormal = list(NULL), argsNonNormal = list(var.equal = TRUE))
+
+kable(print(table_predictors, contDigits=1, varLabel = T, printToggle=FALSE), booktabs=T) %>% add_indent(c(5:9, 11:13, 15:17)) %>% kable_styling(position="center")
+
+kable(print(table_outcomes, contDigits=1, varLabel = T, printToggle=FALSE), booktabs=T) %>% add_indent(c(3:11, 13:15, 17:19, 21:23, 25:27, 29:31, 33:35)) %>% kable_styling(position="center")
+```
+
+Now, we conduct tests to reassure ourselves that we can just adjust for zipcode and not do a full-on spatial analysis:
+
+We fit our models:
+
+We make the Bonferroni correction:
+
