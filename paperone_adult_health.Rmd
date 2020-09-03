@@ -22,14 +22,61 @@ library(kableExtra)
 library(tigris)
 library(sf)
 library(spdep)
+library(logistf)
 
 mydata <- readRDS("~/Desktop/Research/Jerel Flint/Analyses/adult_data_clean.rds")
 ```
 
-We start by selecting our sample and assembling some baseline tables and figures:
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
-mydata_complete <- filter(mydata, !is.na(age), !is.na(reth), !is.na(marital_status), !is.na(educ_level), !is.na(public_benefits), !is.na(gender), !is.na(confidants2), !is.na(years_cityflint), !is.na(noticed_water_issue), !is.na(current_zip), !is.na(blood_test_after_april_2014), !is.na(blood_test_before_april_2014), !is.na(elevated_lead_before_april_2014), !is.na(elevated_lead_after_april_2014), !is.na(rashes_before_april_2014), !is.na(rashes_after_april_2014), !is.na(hairloss_before_april_2014), !is.na(hairloss_after_april_2014), !is.na(nausea_before_april_2014), !is.na(nausea_after_april_2014), !is.na(irritable_before_april_2014), !is.na(irritable_after_april_2014), !is.na(ptsdscore), !is.na(phq), gender != "Transgender Woman")
+We start by selecting our sample:
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+mydata$num_time_notice <- case_when(
+  mydata$noticed_water_issue=="1 year *AFTER* it was switched" ~ 12,
+  mydata$noticed_water_issue=="2 months *AFTER* it was switched" ~ 2,
+  mydata$noticed_water_issue=="Unsure/Don't know" ~ NA_real_,
+  mydata$noticed_water_issue=="2 years *AFTER* it was switched" ~ 24,
+  mydata$noticed_water_issue=="Less than 1 month *AFTER* the water source was switched" ~ 0.5,
+  mydata$noticed_water_issue=="1 month *AFTER* it was switched" ~ 1,
+  mydata$noticed_water_issue=="3 months *AFTER* it was switched" ~ 3,
+  mydata$noticed_water_issue=="1 year and 2 months *AFTER* it was switched" ~ 14,
+  mydata$noticed_water_issue=="6 months *AFTER* it was switched" ~ 6,
+  mydata$noticed_water_issue=="9 months *AFTER* it was switched" ~ 9,
+  mydata$noticed_water_issue=="1 year and 6 months *AFTER* it was switched" ~ 18,
+  mydata$noticed_water_issue=="7 months *AFTER* it was switched" ~ 7,
+  mydata$noticed_water_issue=="4 years or more *AFTER* it was switched" ~ 4,
+  mydata$noticed_water_issue=="10 months *AFTER* it was switched" ~ 10,
+  mydata$noticed_water_issue=="5 months *AFTER* it was switched" ~ 5,
+  mydata$noticed_water_issue=="11 months *AFTER* it was switched" ~ 11,
+  mydata$noticed_water_issue=="4 months *AFTER* it was switched" ~ 4,
+  mydata$noticed_water_issue=="1 year and 5 months *AFTER* it was switched" ~ 17,
+  mydata$noticed_water_issue=="8 months *AFTER* it was switched" ~ 8,
+  mydata$noticed_water_issue=="3 years *AFTER* it was switched" ~ 36,
+  mydata$noticed_water_issue=="2 year and 1 month *AFTER* it was switched" ~ 25,
+  mydata$noticed_water_issue=="2 year and 6 months *AFTER* it was switched" ~ 30,
+  mydata$noticed_water_issue=="1 year and 3 months *AFTER* it was switched" ~ 15,
+  mydata$noticed_water_issue=="1 year and 1 month *AFTER* it was switched" ~ 13
+)
 
+mydata_complete <- filter(mydata, !is.na(age), !is.na(reth), !is.na(marital_status), !is.na(educ_level), !is.na(public_benefits), !is.na(gender), !is.na(confidants2), !is.na(years_cityflint), !is.na(current_zip), !is.na(blood_test_after_april_2014), !is.na(blood_test_before_april_2014), !is.na(elevated_lead_before_april_2014), !is.na(elevated_lead_after_april_2014), !is.na(rashes_before_april_2014), !is.na(rashes_after_april_2014), !is.na(hairloss_before_april_2014), !is.na(hairloss_after_april_2014), !is.na(nausea_before_april_2014), !is.na(nausea_after_april_2014), !is.na(irritable_before_april_2014), !is.na(irritable_after_april_2014), !is.na(ptsdscore), !is.na(phq), gender != "Transgender Woman", !is.na(num_time_notice))
+
+mydata_complete$collapsemarital <- case_when(
+  mydata_complete$marital_status=="Single (never married)" ~ "Single (never married)",
+  mydata_complete$marital_status=="Married" ~ "Married", 
+  mydata_complete$marital_status=="Separated" | mydata_complete$marital_status=="Divorced" | mydata_complete$marital_status=="Widowed" ~ "Separated"
+)
+
+mydata_complete$overall_collapse <- rowSums(select(mydata_complete, rash_collapse, hair_collapse, irritable_collapse, nausea_collapse))
+
+mydata_complete$bloodtest_collapse <- ifelse(mydata_complete$blood_test_after_april_2014=="Yes", 1, 0)
+
+mydata_complete$ptsd_bin <- as.numeric(mydata_complete$ptsdscore >= 3)
+mydata_complete$phq_bin <- as.numeric(mydata_complete$phq >= 6)
+
+mydata_complete$ptsd_bin <- factor(mydata_complete$ptsd_bin, level=c(0,1), labels=c("No", "Yes"))
+mydata_complete$phq_bin <- factor(mydata_complete$phq_bin, level=c(0,1), labels=c("No", "Yes"))
+```
+
+We assemble some descriptives and maps on the complete data:
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
 zcta1 <- zctas(cb = TRUE, starts_with = c("4850", "48532"), class = "sf") %>% filter(ZCTA5CE10 != "48509")
 flintdat <- data.frame("zip" = zcta1$ZCTA5CE10, "geometry" = zcta1$geometry)
 
@@ -40,43 +87,277 @@ totalpop <- data.frame(table(mydata_complete$current_zip))
 colnames(totalpop) <- c("current_zip", "pop")
 
 flintdat2 <- full_join(flintdat, totalpop, by=c("zip" = "current_zip")) 
-flintdat2$pop <- factor(flintdat2$pop)
 
-popmap <- ggplot(data=flintdat2) + geom_sf(data=flintdat2, aes(geometry = geometry, fill = pop), size=0, alpha = 0.6) + geom_sf(data=flint_boundary, aes(geometry=geometry), fill=NA) + geom_sf_label(aes(geometry = geometry, label = paste0(pop)), label.size = 0.02) + xlab(" ") + ylab(" ") + theme(rect = element_blank(), axis.ticks = element_blank(), axis.line=element_blank(),axis.text.x=element_blank(), axis.text.y=element_blank(), legend.position = "none") + ggtitle("Number of Respondents Per Zipcode") 
+
+popmap <- ggplot(data=flintdat2) + geom_sf(data=flintdat2, aes(geometry = geometry, fill = factor(pop)), size=0, alpha = 0.6) + geom_sf(data=flint_boundary, aes(geometry=geometry), fill=NA, color = "black") + geom_sf_label(aes(geometry = geometry, label = paste0(zip, " (", pop, ")"))) + xlab(" ") + ylab(" ") + theme(rect = element_blank(), axis.ticks = element_blank(), axis.line=element_blank(),axis.text.x=element_blank(), axis.text.y=element_blank(), legend.position = "none") + scale_fill_grey()
 
 popmap
 
-mydata_complete$collapsemarital <- case_when(
-  mydata_complete$marital_status=="Single (never married)" ~ "Single (never married)",
-  mydata_complete$marital_status=="Married" ~ "Married", 
-  mydata_complete$marital_status=="Separated" | mydata_complete$marital_status=="Divorced" | mydata_complete$marital_status=="Widowed" ~ "Separated"
-)
+ggsave(filename = "mymap.pdf", plot = popmap, width = 8, height = 8)
 
 var_label(mydata_complete$collapseeduc) <- "Education level"
 var_label(mydata_complete$public_benefits) <- "Receives public benefits"
 var_label(mydata_complete$collapsemarital) <- "Marital status"
-var_label(mydata_complete$noticed_water_issue2) <- "How long after water switch to notice water issue?"
+var_label(mydata_complete$num_time_notice) <- "How long after water switch to notice water issue? (months)"
 var_label(mydata_complete$blood_test_after_april_2014) <- "Received blood lead test"
 var_label(mydata_complete$elevated_lead_after_april_2014) <- "Had elevated lead"
 var_label(mydata_complete$rashes_after_april_2014) <- "Had rashes"
 var_label(mydata_complete$hairloss_after_april_2014) <- "Had hair loss"
 var_label(mydata_complete$nausea_after_april_2014) <- "Had nausea"
 var_label(mydata_complete$irritable_after_april_2014) <- "Was irritable"
-var_label(mydata_complete$ptsdscore) <- "PC-PTSD-5 score"
-var_label(mydata_complete$phq) <- "PHQ-4 score"
+var_label(mydata_complete$ptsd_bin) <- "PTSD"
+var_label(mydata_complete$phq_bin) <- "Depression/Anxiety"
 
-table_predictors <- CreateTableOne(vars=c("age", "gender", "collapseeduc", "public_benefits", "collapsemarital", "years_cityflint", "confidants2"), strata = "collapserace", data=mydata_complete, argsNormal = list(NULL), argsNonNormal = list(var.equal = TRUE))
+table_predictors <- CreateTableOne(vars=c("age", "gender", "collapseeduc", "public_benefits", "collapsemarital", "number_children", "years_cityflint", "confidants2"), strata = "collapserace", data=mydata_complete, argsNormal = list(NULL), argsNonNormal = list(var.equal = TRUE))
 
-table_outcomes <- CreateTableOne(vars=c("noticed_water_issue2", "blood_test_after_april_2014", "elevated_lead_after_april_2014", "rashes_after_april_2014", "hairloss_after_april_2014", "nausea_after_april_2014", "irritable_after_april_2014", "ptsdscore", "phq"), strata = "collapserace", data=mydata_complete, argsNormal = list(NULL), argsNonNormal = list(var.equal = TRUE))
+table_outcomes <- CreateTableOne(vars=c("num_time_notice", "blood_test_after_april_2014", "elevated_lead_after_april_2014", "rashes_after_april_2014", "hairloss_after_april_2014", "nausea_after_april_2014", "irritable_after_april_2014", "overall_collapse", "ptsd_bin", "phq_bin"), strata = "collapserace", data=mydata_complete, argsNormal = list(NULL), argsNonNormal = list(var.equal = TRUE))
 
 kable(print(table_predictors, contDigits=1, varLabel = T, printToggle=FALSE), booktabs=T) %>% add_indent(c(5:9, 11:13, 15:17)) %>% kable_styling(position="center")
 
-kable(print(table_outcomes, contDigits=1, varLabel = T, printToggle=FALSE), booktabs=T) %>% add_indent(c(3:11, 13:15, 17:19, 21:23, 25:27, 29:31, 33:35)) %>% kable_styling(position="center")
+kable(print(table_outcomes, contDigits=1, varLabel = T, printToggle=FALSE), booktabs=T) %>% add_indent(c(4:6, 8:10, 12:14, 16:18, 20:22, 24:26)) %>% kable_styling(position="center")
+
+table_predictors_notstrat <- CreateTableOne(vars=c("age", "gender", "collapseeduc", "public_benefits", "collapsemarital", "number_children", "years_cityflint", "confidants2"), data=mydata_complete, argsNormal = list(NULL), argsNonNormal = list(var.equal = TRUE))
+
+table_outcomes_notstrat <- CreateTableOne(vars=c("num_time_notice", "blood_test_after_april_2014", "elevated_lead_after_april_2014", "rashes_after_april_2014", "hairloss_after_april_2014", "nausea_after_april_2014", "irritable_after_april_2014", "overall_collapse", "ptsd_bin", "phq_bin"), data=mydata_complete, argsNormal = list(NULL), argsNonNormal = list(var.equal = TRUE))
+
+kable(print(table_predictors_notstrat, contDigits=1, varLabel = T, printToggle=FALSE), booktabs=T) %>% add_indent(c(5:9, 11:13, 15:17)) %>% kable_styling(position="center")
+
+kable(print(table_outcomes_notstrat, contDigits=1, varLabel = T, printToggle=FALSE), booktabs=T) %>% add_indent(c(4:6, 8:10, 12:14, 16:18, 20:22, 24:26)) %>% kable_styling(position="center")
 ```
 
-Now, we conduct tests to reassure ourselves that we can just adjust for zipcode and not do a full-on spatial analysis:
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+knitr::include_graphics("~/Desktop/Research/Jerel Flint/Analyses/sample_inclusion.png")
+```
 
-We fit our models:
+Now, we conduct Moran's I tests grouped by zipcode to reassure ourselves that we can just adjust for zipcode and not do a full-on spatial analysis:
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+zip_symp <- mydata_complete %>% dplyr::group_by(current_zip) %>% dplyr::summarize(elev_blood = sum(elevated_collapse, na.rm=TRUE), rash = sum(rash_collapse, na.rm=TRUE), nausea = sum(nausea_collapse, na.rm=TRUE), hairloss = sum(hair_collapse, na.rm=TRUE), irritable = sum(irritable_collapse, na.rm=TRUE), overall = sum(overall_collapse, na.rm=TRUE), ptsd = sum(ptsd_bin=="Yes", na.rm=TRUE), phq = sum(phq_bin=="Yes", na.rm=TRUE), get_test = sum(bloodtest_collapse, na.rm=TRUE), notice_issue = mean(num_time_notice, na.rm=TRUE), black = sum(collapserace=="Black", na.rm=TRUE), other = sum(collapserace=="Other", na.rm=TRUE),  l9 = sum(collapseeduc=="Less than high school", na.rm=TRUE), hs = sum(collapseeduc=="High school", na.rm=TRUE), assc = sum(collapseeduc=="Associate's", na.rm=TRUE), somecoll = sum(collapseeduc=="Some college", na.rm=TRUE), female = sum(gender!="Male", na.rm=TRUE), age = mean(age, na.rm=TRUE), pubben = sum(public_benefits=="Yes", na.rm=TRUE), pubbendk = sum(public_benefits=="Don't know/Unsure", na.rm=TRUE), network = mean(confidants2, na.rm=TRUE))
 
-We make the Bonferroni correction:
+flintdat3 <- full_join(flintdat2, zip_symp, by=c("zip" = "current_zip")) 
+
+flintdat3$l9 <- flintdat3$l9/flintdat3$pop
+flintdat3$hs <- flintdat3$hs/flintdat3$pop
+flintdat3$assc <- flintdat3$assc/flintdat3$pop
+flintdat3$somecoll <- flintdat3$somecoll/flintdat3$pop
+flintdat3$black <- flintdat3$black/flintdat3$pop
+flintdat3$other <- flintdat3$other/flintdat3$pop
+flintdat3$female <- flintdat3$female/flintdat3$pop
+flintdat3$pubben <- flintdat3$pubben/flintdat3$pop
+flintdat3$pubbendk <- flintdat3$pubbendk/flintdat3$pop
+
+flint.nb <- poly2nb(flintdat3$geometry)
+flint.list.w <- nb2listw(flint.nb)
+
+elevblood <- moran.test(flintdat3$elev_blood/flintdat3$pop, listw=flint.list.w, randomisation=FALSE)
+elevblood
+elevblood_adj <- lm.morantest(lm(flintdat3$elev_blood/flintdat3$pop~ flintdat3$black + flintdat3$other + flintdat3$female + flintdat3$age),listw=flint.list.w)
+elevblood_adj
+
+rash <- moran.test(flintdat3$rash/flintdat3$pop, listw=flint.list.w, randomisation=FALSE)
+rash
+rash_adj <- lm.morantest(lm(flintdat3$rash/flintdat3$pop ~ flintdat3$black + flintdat3$other + flintdat3$female + flintdat3$age),listw=flint.list.w)
+rash_adj
+
+nausea <- moran.test(flintdat3$nausea/flintdat3$pop, listw=flint.list.w, randomisation=FALSE)
+nausea
+nausea_adj <- lm.morantest(lm(flintdat3$nausea/flintdat3$pop ~ flintdat3$black + flintdat3$other + flintdat3$female + flintdat3$age),listw=flint.list.w)
+nausea_adj
+
+hairloss <- moran.test(flintdat3$hairloss/flintdat3$pop, listw=flint.list.w, randomisation=FALSE)
+hairloss
+hairloss_adj <- lm.morantest(lm(flintdat3$hairloss/flintdat3$pop ~ flintdat3$black + flintdat3$other + flintdat3$female + flintdat3$age),listw=flint.list.w)
+hairloss_adj
+
+irritable <- moran.test(flintdat3$irritable/flintdat3$pop, listw=flint.list.w, randomisation=FALSE)
+irritable
+irritable_adj <- lm.morantest(lm(flintdat3$irritable/flintdat3$pop ~ flintdat3$black + flintdat3$other + flintdat3$female + flintdat3$age),listw=flint.list.w)
+irritable_adj
+
+overall <- moran.test(flintdat3$overall/flintdat3$pop, listw=flint.list.w, randomisation=FALSE)
+overall
+overall_adj <- lm.morantest(lm(flintdat3$overall/flintdat3$pop ~ flintdat3$black + flintdat3$other + flintdat3$female + flintdat3$age),listw=flint.list.w)
+overall_adj
+
+ptsd <- moran.test(flintdat3$ptsd/flintdat3$pop, listw=flint.list.w, randomisation=FALSE)
+ptsd
+ptsd_adj <- lm.morantest(lm(flintdat3$ptsd/flintdat3$pop ~ flintdat3$black + flintdat3$other + flintdat3$female + flintdat3$age),listw=flint.list.w)
+ptsd_adj
+
+phq <- moran.test(flintdat3$phq/flintdat3$pop, listw=flint.list.w, randomisation=FALSE)
+phq
+phq_adj <- lm.morantest(lm(flintdat3$phq/flintdat3$pop ~ flintdat3$black + flintdat3$other + flintdat3$female + flintdat3$age),listw=flint.list.w)
+phq_adj
+
+get_tested <- moran.test(flintdat3$get_test/flintdat3$pop, listw=flint.list.w, randomisation=FALSE)
+get_tested
+get_tested_adj <- lm.morantest(lm(flintdat3$get_test/flintdat3$pop ~ flintdat3$black + flintdat3$other + flintdat3$female + flintdat3$age),listw=flint.list.w)
+get_tested_adj
+
+notice <- moran.test(flintdat3$notice_issue, listw=flint.list.w, randomisation=FALSE)
+notice
+notice_adj <- lm.morantest(lm(flintdat3$notice_issue ~ flintdat3$black + flintdat3$other + flintdat3$female + flintdat3$age),listw=flint.list.w)
+notice_adj
+```
+
+There is some evidence of spatial correlation for nausea and hairloss, but once we adjust for baseline covariates it mostly goes away. Given the constraints of this analysis, we're going to just adjust for zipcode in our models and call it a day. 
+
+We fit our models according to the causal diagram given here:
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+knitr::include_graphics("~/Desktop/Research/Jerel Flint/Analyses/mediation.png")
+```
+
+As we know, when trying to understand the effect of a mediated effect on some outcome, we DO NOT adjust for the mediator. However, when trying to understand the effect of the mediator on the outcome, we DO adjust for the mediated effect. Therefore, we have to fit several models for our different outcomes, adjusting for different things depending on what the predictor of interest is. All told, we consider 10 different outcomes (PTSD, PHQ, rashes, hair loss, nausea, irritability, overall number of symptoms, elevated blood lead, getting tested, time to noticing issues) and consider the classes of predictors: demographics/baseline, time to noticing issues/getting tested, elevated blood lead, and emergence of symptoms. This results in us fitting 17 different models, given here:
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+mydata_complete$collapsezip <- ifelse(mydata_complete$current_zip==48502, 2, mydata_complete$current_zip)
+mydata_complete$collapsezip <- factor(mydata_complete$collapsezip, levels=c(2:7), labels=c("48502/48503", "48504", "48505", "48506", "48507", "48532"))
+mydata_complete$collapsepubben <- ifelse(mydata_complete$public_benefits=="Yes", "Yes", "No")
+
+ptsd_dem <- glm(ptsd_bin ~ age + gender + collapserace + collapsepubben + number_children + years_cityflint + confidants2 + collapsezip, data=mydata_complete, family="binomial")
+
+summary(ptsd_dem)
+
+phq_dem <- glm(phq_bin ~ age + gender + collapserace + collapsepubben + number_children + years_cityflint + confidants2 + collapsezip, data=mydata_complete, family="binomial")
+
+summary(phq_dem)
+
+rash_dem <- glm(rash_collapse ~ age + gender + collapserace + collapsepubben + number_children + years_cityflint + confidants2 + collapsezip, data=mydata_complete, family="binomial")
+
+summary(rash_dem)
+
+hairloss_dem <- glm(hair_collapse ~ age + gender + collapserace + collapsepubben + number_children + years_cityflint + confidants2 + collapsezip, data=mydata_complete, family="binomial")
+
+summary(hairloss_dem)
+
+nausea_dem <- glm(nausea_collapse ~ age + gender + collapserace + collapsepubben + number_children + years_cityflint + confidants2 + collapsezip, data=mydata_complete, family="binomial")
+
+summary(nausea_dem)
+
+irritable_dem <- glm(irritable_collapse ~ age + gender + collapserace + collapsepubben + number_children + years_cityflint + confidants2 + collapsezip, data=mydata_complete, family="binomial")
+
+summary(irritable_dem)
+
+overall_dem <- glm(overall_collapse ~ age + gender + collapserace + collapsepubben + number_children + years_cityflint + confidants2 + collapsezip, data=mydata_complete, family="poisson")
+
+summary(overall_dem)
+
+bloodlead_dem <- logistf(elevated_collapse ~ age + gender + collapserace + collapsepubben + number_children + years_cityflint + confidants2 + collapsezip, data = mydata_complete)
+
+test1 <- summary(bloodlead_dem)
+
+gettest_dem <- glm(bloodtest_collapse ~ age + gender + collapserace + collapsepubben + number_children + years_cityflint + confidants2 + collapsezip, data=mydata_complete, family="binomial")
+
+summary(gettest_dem)
+
+time_dem <- lm(log(num_time_notice) ~ age + gender + collapserace + collapsepubben + number_children + years_cityflint + confidants2 + collapsezip, data=mydata_complete)
+
+summary(time_dem)
+
+mydata_complete$rash_collapse_before <- ifelse(mydata_complete$rashes_before_april_2014=="Yes", "Yes", "No")
+mydata_complete$hair_collapse_before <- ifelse(mydata_complete$hairloss_before_april_2014=="Yes", "Yes", "No")
+mydata_complete$nausea_collapse_before <- ifelse(mydata_complete$nausea_before_april_2014=="Yes", "Yes", "No")
+mydata_complete$irritable_collapse_before <- ifelse(mydata_complete$irritable_before_april_2014=="Yes", "Yes", "No")
+mydata_complete$bloodtest_collapse_before <- ifelse(mydata_complete$blood_test_before_april_2014=="Yes", "Yes", "No")
+
+ptsd_symp <- glm(ptsd_bin ~ age + gender + collapserace + collapsepubben + number_children + years_cityflint + confidants2 + collapsezip + overall_collapse + elevated_collapse + bloodtest_collapse + num_time_notice, data=mydata_complete, family="binomial")
+
+summary(ptsd_symp)
+
+phq_symp <- glm(phq_bin ~ age + gender + collapserace + collapsepubben + number_children + years_cityflint + confidants2 + collapsezip + overall_collapse + elevated_collapse + bloodtest_collapse + num_time_notice, data=mydata_complete, family="binomial")
+
+summary(phq_symp)
+
+rash_symp <- logistf(rash_collapse ~ age + gender + collapserace + collapsepubben + number_children + years_cityflint + confidants2 + collapsezip + hair_collapse + nausea_collapse + irritable_collapse + elevated_collapse + bloodtest_collapse + num_time_notice + rash_collapse_before, data=mydata_complete)
+
+test2 <- summary(rash_symp)
+
+hairloss_symp <- logistf(hair_collapse ~ age + gender + collapserace + collapsepubben + number_children + years_cityflint + confidants2 + collapsezip + rash_collapse + nausea_collapse + irritable_collapse + elevated_collapse + bloodtest_collapse + num_time_notice + hair_collapse_before, data=mydata_complete)
+
+test3 <- summary(hairloss_symp)
+
+nausea_symp <- logistf(nausea_collapse ~ age + gender + collapserace + collapsepubben + number_children + years_cityflint + confidants2 + collapsezip + rash_collapse + hair_collapse + irritable_collapse + elevated_collapse + bloodtest_collapse + num_time_notice + nausea_collapse_before, data=mydata_complete)
+
+test4 <- summary(nausea_symp)
+
+irritable_symp <- logistf(irritable_collapse ~ age + gender + collapserace + collapsepubben + number_children + years_cityflint + confidants2 + collapsezip + rash_collapse + hair_collapse + nausea_collapse + elevated_collapse + bloodtest_collapse + num_time_notice + irritable_collapse_before, data=mydata_complete)
+
+test5 <- summary(irritable_symp)
+
+overall_bloodlead <- glm(overall_collapse ~ age + gender + collapserace + collapsepubben + number_children + years_cityflint + confidants2 + collapsezip + elevated_collapse + bloodtest_collapse + num_time_notice + rash_collapse_before + hair_collapse_before + nausea_collapse_before + irritable_collapse_before, data=mydata_complete, family="poisson")
+
+summary(overall_bloodlead)
+```
+
+Since we fit quite a few models, we use the FDR to adjust for our multiple testing.
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+#Assembling a data frame of desired coefficients, confidence intervals, and p-values:
+myresults <- data.frame("Outcome" = c(rep("PTSD", length(summary(ptsd_dem)$coefficients[-1,1])), rep("PHQ", length(summary(phq_dem)$coefficients[-1,1])), rep("Rashes", length(summary(rash_dem)$coefficients[-1,1])), rep("Hairloss", length(summary(hairloss_dem)$coefficients[-1,1])), rep("Nausea", length(summary(nausea_dem)$coefficients[-1,1])), rep("Irritable", length(summary(irritable_dem)$coefficients[-1,1])), rep("Overall", length(summary(overall_dem)$coefficients[-1,1])), rep("Elevated lead", length(test1$coefficients[-1])), rep("Get tested", length(summary(gettest_dem)$coefficients[-1,1])), rep("Time to notice", length(summary(time_dem)$coefficients[-1,1])), rep("PTSD", length(summary(ptsd_symp)$coefficients[15:18,1])), rep("PHQ", length(summary(phq_symp)$coefficients[15:18,1])), rep("Rashes", length(test2$coefficients[15:20])), rep("Hairloss", length(test3$coefficients[15:20])), rep("Nausea", length(test4$coefficients[15:20])), rep("Irritable", length(test5$coefficients[15:20])), rep("Overall", length(summary(overall_bloodlead)$coefficients[15:17,1]))))
+
+myresults$Predictor <- c(rownames(summary(ptsd_dem)$coefficients[-1,]), rownames(summary(phq_dem)$coefficients[-1,]), rownames(summary(rash_dem)$coefficients[-1,]), rownames(summary(hairloss_dem)$coefficients[-1,]), rownames(summary(nausea_dem)$coefficients[-1,]), rownames(summary(irritable_dem)$coefficients[-1,]), rownames(summary(overall_dem)$coefficients[-1,]), names(test1$coefficients[-1]), rownames(summary(gettest_dem)$coefficients[-1,]), rownames(summary(time_dem)$coefficients[-1,]), rownames(summary(ptsd_symp)$coefficients[15:18,]), rownames(summary(phq_symp)$coefficients[15:18,]), names(test2$coefficients[15:20]), names(test3$coefficients[15:20]), names(test4$coefficients[15:20]), names(test5$coefficients[15:20]), rownames(summary(overall_bloodlead)$coefficients[15:17,])) 
+
+myresults$Coefficient <- c(summary(ptsd_dem)$coefficients[-1,1], summary(phq_dem)$coefficients[-1,1], summary(rash_dem)$coefficients[-1,1], summary(hairloss_dem)$coefficients[-1,1], summary(nausea_dem)$coefficients[-1,1], summary(irritable_dem)$coefficients[-1,1], summary(overall_dem)$coefficients[-1,1], test1$coefficients[-1], summary(gettest_dem)$coefficients[-1,1], summary(time_dem)$coefficients[-1,1], summary(ptsd_symp)$coefficients[15:18,1], summary(phq_symp)$coefficients[15:18,1], test2$coefficients[15:20], test3$coefficients[15:20], test4$coefficients[15:20], test5$coefficients[15:20], summary(overall_bloodlead)$coefficients[15:17,1]) 
+
+myresults$Lower <- c(summary(ptsd_dem)$coefficients[-1,1]-1.96*summary(ptsd_dem)$coefficients[-1,2], summary(phq_dem)$coefficients[-1,1]-1.96*summary(phq_dem)$coefficients[-1,2], summary(rash_dem)$coefficients[-1,1]-1.96*summary(rash_dem)$coefficients[-1,2], summary(hairloss_dem)$coefficients[-1,1]-1.96*summary(hairloss_dem)$coefficients[-1,2], summary(nausea_dem)$coefficients[-1,1]-1.96*summary(nausea_dem)$coefficients[-1,2], summary(irritable_dem)$coefficients[-1,1]-1.96*summary(irritable_dem)$coefficients[-1,2], summary(overall_dem)$coefficients[-1,1]-1.96*summary(overall_dem)$coefficients[-1,2], test1$ci.lower[-1], summary(gettest_dem)$coefficients[-1,1]-1.96*summary(gettest_dem)$coefficients[-1,2], summary(time_dem)$coefficients[-1,1]-1.96*summary(time_dem)$coefficients[-1,2], summary(ptsd_symp)$coefficients[15:18,1]-1.96*summary(ptsd_symp)$coefficients[15:18,2], summary(phq_symp)$coefficients[15:18,1]-1.96*summary(phq_symp)$coefficients[15:18,2], test2$ci.lower[15:20], test3$ci.lower[15:20], test4$ci.lower[15:20], test5$ci.lower[15:20], summary(overall_bloodlead)$coefficients[15:17,1]-1.96*summary(overall_bloodlead)$coefficients[15:17,2]) 
+
+myresults$Upper <- c(summary(ptsd_dem)$coefficients[-1,1]+1.96*summary(ptsd_dem)$coefficients[-1,2], summary(phq_dem)$coefficients[-1,1]+1.96*summary(phq_dem)$coefficients[-1,2], summary(rash_dem)$coefficients[-1,1]+1.96*summary(rash_dem)$coefficients[-1,2], summary(hairloss_dem)$coefficients[-1,1]+1.96*summary(hairloss_dem)$coefficients[-1,2], summary(nausea_dem)$coefficients[-1,1]+1.96*summary(nausea_dem)$coefficients[-1,2], summary(irritable_dem)$coefficients[-1,1]+1.96*summary(irritable_dem)$coefficients[-1,2], summary(overall_dem)$coefficients[-1,1]+1.96*summary(overall_dem)$coefficients[-1,2], test1$ci.upper[-1], summary(gettest_dem)$coefficients[-1,1]+1.96*summary(gettest_dem)$coefficients[-1,2], summary(time_dem)$coefficients[-1,1]+1.96*summary(time_dem)$coefficients[-1,2], summary(ptsd_symp)$coefficients[15:18,1]+1.96*summary(ptsd_symp)$coefficients[15:18,2], summary(phq_symp)$coefficients[15:18,1]+1.96*summary(phq_symp)$coefficients[15:18,2], test2$ci.upper[15:20], test3$ci.upper[15:20], test4$ci.upper[15:20], test5$ci.upper[15:20], summary(overall_bloodlead)$coefficients[15:17,1]+1.96*summary(overall_bloodlead)$coefficients[15:17,2])
+
+myresults$pvalue <- c(summary(ptsd_dem)$coefficients[-1,4], summary(phq_dem)$coefficients[-1,4], summary(rash_dem)$coefficients[-1,4], summary(hairloss_dem)$coefficients[-1,4], summary(nausea_dem)$coefficients[-1,4], summary(irritable_dem)$coefficients[-1,4], summary(overall_dem)$coefficients[-1,4], test1$prob[-1], summary(gettest_dem)$coefficients[-1,4], summary(time_dem)$coefficients[-1,4], summary(ptsd_symp)$coefficients[15:18,4], summary(phq_symp)$coefficients[15:18,4], test2$prob[15:20], test3$prob[15:20], test4$prob[15:20], test5$prob[15:20], summary(overall_bloodlead)$coefficients[15:17,4])
+
+myresults$BHpvalue <- p.adjust(myresults$pvalue, method="BH")
+myresults$sig <- ifelse(myresults$BHpvalue <=0.05, "LOOK", NA_character_)
+
+myresults$Predictor_clean <- case_when(
+  myresults$Predictor=="age" ~ "Age",
+  myresults$Predictor=="genderMale" ~ "Male",
+  myresults$Predictor=="collapseraceOther" ~ "Other race",
+  myresults$Predictor=="collapseraceWhite" ~ "White race",
+  myresults$Predictor=="collapseeducHigh school" ~ "High school graduate",
+  myresults$Predictor=="collapseeducSome college" ~ "Some college",
+  myresults$Predictor=="collapseeducAssociate's" ~ "Associate's degree",
+  myresults$Predictor=="collapseeducCollege degree or more" ~ "College degree or more",
+  myresults$Predictor=="collapsepubbenYes" ~ "Receives public benefits",
+  myresults$Predictor=="collapsemaritalSeparated" ~ "Separated",
+  myresults$Predictor=="collapsemaritalSingle (never married)" ~ "Single",
+  myresults$Predictor=="years_cityflint" ~ "Years in Flint",
+  myresults$Predictor=="confidants2" ~ "Network size",
+  myresults$Predictor=="collapsezip48504" ~ "Zipcode 48504",
+  myresults$Predictor=="collapsezip48505" ~ "Zipcode 48505",
+  myresults$Predictor=="collapsezip48506" ~ "Zipcode 48506",
+  myresults$Predictor=="collapsezip48507" ~ "Zipcode 48507",
+  myresults$Predictor=="collapsezip48532" ~ "Zipcode 48532",
+  myresults$Predictor=="rash_collapse" ~ "Rashes",
+  myresults$Predictor=="hair_collapse" ~ "Hair loss",
+  myresults$Predictor=="nausea_collapse" ~ "Nausea",
+  myresults$Predictor=="irritable_collapse" ~ "Irritability",
+  myresults$Predictor=="elevated_collapse" ~ "Elevated BLL",
+  myresults$Predictor=="bloodtest_collapse" ~ "Screened for lead",
+  myresults$Predictor=="num_time_notice" ~ "Months to notice problem"
+)
+
+myresults$Predictor_clean <- factor(myresults$Predictor_clean, levels= c("Age", "Male", "Other race", "White race", "High school graduate", "Some college", "Associate's degree", "College degree or more", "Receives public benefits", "Separated", "Single", "Years in Flint", "Network size", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Months to notice problem", "Screened for lead", "Elevated BLL", "Rashes", "Hair loss", "Nausea", "Irritability"), ordered=TRUE)
+
+
+table3_results <- filter(myresults, Outcome=="Time to notice" | Outcome=="Get tested" | Outcome=="Elevated lead") %>%
+  mutate(Label = paste(round(exp(Coefficient), digits=1), " (", round(exp(Lower), digits=1), ",", round(exp(Upper), digits=1), ")", sep=""), Pvalue = round(BHpvalue, digits=2)) %>% select(Outcome, Predictor_clean, Label, Pvalue)
+  
+table4_results <- filter(myresults, Outcome=="Rashes" | Outcome=="Hairloss" | Outcome=="Nausea" | Outcome=="Irritable") %>%
+  mutate(Label = paste(round(exp(Coefficient), digits=1), " (", round(exp(Lower), digits=1), ",", round(exp(Upper), digits=1), ")", sep=""), Pvalue = round(BHpvalue, digits=2)) %>% select(Outcome, Predictor_clean, Label, Pvalue)
+
+table4_resultsb <- filter(myresults, Outcome=="Overall") %>%
+  mutate(Label = paste(round(Coefficient, digits=1), " (", round(Lower, digits=1), ",", round(Upper, digits=1), ")", sep=""), Pvalue = round(BHpvalue, digits=2)) %>% select(Outcome, Predictor_clean, Label, Pvalue)
+
+table5_results <- filter(myresults, Outcome=="PTSD" | Outcome=="PHQ") %>%
+  mutate(Label = paste(round(exp(Coefficient), digits=1), " (", round(exp(Lower), digits=1), ",", round(exp(Upper), digits=1), ")", sep=""), Pvalue = round(BHpvalue, digits=2)) %>% select(Outcome, Predictor_clean, Label, Pvalue)  
+
+#ptsd_plot <- ggplot(myresults[myresults$Outcome=="PTSD",], aes(fct_rev(Predictor_clean), Coefficient)) + geom_point() + geom_errorbar(aes(ymin=Lower, ymax=Upper, width=0.1)) + coord_flip(ylim=c(-2.35, 5.5)) + labs(y = "Odds Ratio and 95% CI", x = "", caption=TeX('Protective $\\leftarrow \\rightarrow$ Harmful' )) + geom_hline(yintercept=0, linetype="dashed", color = "black") + theme(panel.background = element_rect(fill="white"), panel.grid.major = element_blank(), panel.grid.minor=element_blank(), legend.position="bottom", text=element_text(size=14), plot.caption = element_text(size=14, hjust = 0.15)) + geom_rect(fill="white", ymin=4.7, ymax=Inf, xmin=-Inf, xmax=Inf) + annotate(geom = 'text', label = myresults$Label[myresults$Outcome=="PTSD"], x = myresults$Predictor_clean[myresults$Outcome=="PTSD"], y = 3.5, hjust = 0, vjust = 0.5) + scale_y_continuous(breaks=log(c(0.1, 0.25, 0.5, 1, 2, 4, 10)), labels=c("0.1","0.25", "0.5", "1.0", "2.0", "4.0", "10.0")) + ggtitle("Outcome: Trauma Symptoms") 
+ 
+#ptsd_plot
+
+#phq_plot <- ggplot(myresults[myresults$Outcome=="PHQ",], aes(fct_rev(Predictor_clean), Coefficient)) + geom_point() + geom_errorbar(aes(ymin=Lower, ymax=Upper, width=0.1)) + coord_flip(ylim=c(-2.35, 5.5)) + labs(y = "Odds Ratio and 95% CI", x = "", caption=TeX('Protective $\\leftarrow \\rightarrow$ Harmful' )) + geom_hline(yintercept=0, linetype="dashed", color = "black") + theme(panel.background = element_rect(fill="white"), panel.grid.major = element_blank(), panel.grid.minor=element_blank(), legend.position="bottom", text=element_text(size=14), plot.caption = element_text(size=14, hjust = 0.15), axis.title.y=element_blank(), axis.text.y=element_blank(), axis.ticks.y=element_blank()) + geom_rect(fill="white", ymin=4.7, ymax=Inf, xmin=-Inf, xmax=Inf) + annotate(geom = 'text', label = myresults$Label[myresults$Outcome=="PHQ"], x = myresults$Predictor_clean[myresults$Outcome=="PHQ"], y = 3.5, hjust = 0, vjust = 0.5) + scale_y_continuous(breaks=log(c(0.1, 0.25, 0.5, 1, 2, 4, 10)), labels=c("0.1","0.25", "0.5", "1.0", "2.0", "4.0", "10.0")) + ggtitle("Outcome: Depression/Anxiety") 
+ 
+#phq_plot
+
+#mental_plots <- grid.arrange(ptsd_plot, phq_plot, nrow=1, widths = c(6, 3))
+
+```
+
 
