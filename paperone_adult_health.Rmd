@@ -56,23 +56,40 @@ mydata$num_time_notice <- case_when(
   mydata$noticed_water_issue=="1 year and 1 month *AFTER* it was switched" ~ 13
 )
 
-mydata_complete <- filter(mydata, !is.na(age), !is.na(reth), !is.na(marital_status), !is.na(educ_level), !is.na(public_benefits), !is.na(gender), !is.na(confidants2), !is.na(years_cityflint), !is.na(current_zip), !is.na(blood_test_after_april_2014), !is.na(blood_test_before_april_2014), !is.na(elevated_lead_before_april_2014), !is.na(elevated_lead_after_april_2014), !is.na(rashes_before_april_2014), !is.na(rashes_after_april_2014), !is.na(hairloss_before_april_2014), !is.na(hairloss_after_april_2014), !is.na(nausea_before_april_2014), !is.na(nausea_after_april_2014), !is.na(irritable_before_april_2014), !is.na(irritable_after_april_2014), !is.na(ptsdscore), !is.na(phq), gender != "Transgender Woman", !is.na(num_time_notice))
-
-mydata_complete$collapsemarital <- case_when(
-  mydata_complete$marital_status=="Single (never married)" ~ "Single (never married)",
-  mydata_complete$marital_status=="Married" ~ "Married", 
-  mydata_complete$marital_status=="Separated" | mydata_complete$marital_status=="Divorced" | mydata_complete$marital_status=="Widowed" ~ "Separated"
+mydata$collapsemarital <- case_when(
+  mydata$marital_status=="Single (never married)" ~ "Single (never married)",
+  mydata$marital_status=="Married" ~ "Married", 
+  mydata$marital_status=="Separated" | mydata$marital_status=="Divorced" | mydata$marital_status=="Widowed" ~ "Separated"
 )
 
-mydata_complete$overall_collapse <- rowSums(select(mydata_complete, rash_collapse, hair_collapse, irritable_collapse, nausea_collapse))
+mydata$overall_collapse <- rowSums(select(mydata, rash_collapse, hair_collapse, irritable_collapse, nausea_collapse))
 
-mydata_complete$bloodtest_collapse <- ifelse(mydata_complete$blood_test_after_april_2014=="Yes", 1, 0)
+mydata$bloodtest_collapse <- ifelse(mydata$blood_test_after_april_2014=="Yes", 1, 0)
 
-mydata_complete$ptsd_bin <- as.numeric(mydata_complete$ptsdscore >= 3)
-mydata_complete$phq_bin <- as.numeric(mydata_complete$phq >= 6)
+mydata$ptsd_bin <- as.numeric(mydata$ptsdscore >= 3)
+mydata$phq_bin <- as.numeric(mydata$phq >= 6)
 
-mydata_complete$ptsd_bin <- factor(mydata_complete$ptsd_bin, level=c(0,1), labels=c("No", "Yes"))
-mydata_complete$phq_bin <- factor(mydata_complete$phq_bin, level=c(0,1), labels=c("No", "Yes"))
+mydata$ptsd_bin <- factor(mydata$ptsd_bin, level=c(0,1), labels=c("No", "Yes"))
+mydata$phq_bin <- factor(mydata$phq_bin, level=c(0,1), labels=c("No", "Yes"))
+
+mydata$include <- ifelse(!is.na(mydata$age) & !is.na(mydata$reth) & !is.na(mydata$marital_status) & !is.na(mydata$educ_level) & !is.na(mydata$public_benefits) & !is.na(mydata$gender) & !is.na(mydata$confidants2) & !is.na(mydata$years_cityflint) & !is.na(mydata$current_zip) & !is.na(mydata$blood_test_after_april_2014) & !is.na(mydata$blood_test_before_april_2014) & !is.na(mydata$elevated_lead_before_april_2014) & !is.na(mydata$elevated_lead_after_april_2014) & !is.na(mydata$rashes_before_april_2014) & !is.na(mydata$rashes_after_april_2014) & !is.na(mydata$hairloss_before_april_2014) & !is.na(mydata$hairloss_after_april_2014) & !is.na(mydata$nausea_before_april_2014) & !is.na(mydata$nausea_after_april_2014) & !is.na(mydata$irritable_before_april_2014) & !is.na(mydata$irritable_after_april_2014) & !is.na(mydata$ptsdscore) & !is.na(mydata$phq) & mydata$gender != "Transgender Woman" & !is.na(mydata$num_time_notice),  1, 0)
+
+mydata$include <- factor(mydata$include, levels=c(0, 1), labels=c("Excluded", "Included"))
+
+var_label(mydata$collapseeduc) <- "Education level"
+var_label(mydata$public_benefits) <- "Receives public benefits"
+var_label(mydata$collapsemarital) <- "Marital status"
+var_label(mydata$num_time_notice) <- "How long after water switch to notice water issue? (months)"
+var_label(mydata$blood_test_after_april_2014) <- "Received blood lead test"
+var_label(mydata$elevated_lead_after_april_2014) <- "Had elevated lead"
+var_label(mydata$rashes_after_april_2014) <- "Had rashes"
+var_label(mydata$hairloss_after_april_2014) <- "Had hair loss"
+var_label(mydata$nausea_after_april_2014) <- "Had nausea"
+var_label(mydata$irritable_after_april_2014) <- "Was irritable"
+var_label(mydata$ptsd_bin) <- "PTSD"
+var_label(mydata$phq_bin) <- "Depression/Anxiety"
+
+mydata_complete <- filter(mydata, !is.na(age), !is.na(reth), !is.na(marital_status), !is.na(educ_level), !is.na(public_benefits), !is.na(gender), !is.na(confidants2), !is.na(years_cityflint), !is.na(current_zip), !is.na(blood_test_after_april_2014), !is.na(blood_test_before_april_2014), !is.na(elevated_lead_before_april_2014), !is.na(elevated_lead_after_april_2014), !is.na(rashes_before_april_2014), !is.na(rashes_after_april_2014), !is.na(hairloss_before_april_2014), !is.na(hairloss_after_april_2014), !is.na(nausea_before_april_2014), !is.na(nausea_after_april_2014), !is.na(irritable_before_april_2014), !is.na(irritable_after_april_2014), !is.na(ptsdscore), !is.na(phq), gender != "Transgender Woman", !is.na(num_time_notice))
 ```
 
 We assemble some descriptives and maps on the complete data:
@@ -87,7 +104,6 @@ totalpop <- data.frame(table(mydata_complete$current_zip))
 colnames(totalpop) <- c("current_zip", "pop")
 
 flintdat2 <- full_join(flintdat, totalpop, by=c("zip" = "current_zip")) 
-
 
 popmap <- ggplot(data=flintdat2) + geom_sf(data=flintdat2, aes(geometry = geometry, fill = factor(pop)), size=0, alpha = 0.6) + geom_sf(data=flint_boundary, aes(geometry=geometry), fill=NA, color = "black") + geom_sf_label(aes(geometry = geometry, label = paste0(zip, " (", pop, ")"))) + xlab(" ") + ylab(" ") + theme(rect = element_blank(), axis.ticks = element_blank(), axis.line=element_blank(),axis.text.x=element_blank(), axis.text.y=element_blank(), legend.position = "none") + scale_fill_grey()
 
@@ -108,6 +124,8 @@ var_label(mydata_complete$irritable_after_april_2014) <- "Was irritable"
 var_label(mydata_complete$ptsd_bin) <- "PTSD"
 var_label(mydata_complete$phq_bin) <- "Depression/Anxiety"
 
+table_missing <- CreateTableOne(vars=c("age", "gender", "collapseeduc", "public_benefits", "collapsemarital", "number_children", "years_cityflint", "confidants2", "num_time_notice", "blood_test_after_april_2014", "elevated_lead_after_april_2014", "rashes_after_april_2014", "hairloss_after_april_2014", "nausea_after_april_2014", "irritable_after_april_2014", "overall_collapse", "ptsd_bin", "phq_bin"), strata = "include", data=mydata, argsNormal = list(NULL), argsNonNormal = list(var.equal = TRUE))
+
 table_predictors <- CreateTableOne(vars=c("age", "gender", "collapseeduc", "public_benefits", "collapsemarital", "number_children", "years_cityflint", "confidants2"), strata = "collapserace", data=mydata_complete, argsNormal = list(NULL), argsNonNormal = list(var.equal = TRUE))
 
 table_outcomes <- CreateTableOne(vars=c("num_time_notice", "blood_test_after_april_2014", "elevated_lead_after_april_2014", "rashes_after_april_2014", "hairloss_after_april_2014", "nausea_after_april_2014", "irritable_after_april_2014", "overall_collapse", "ptsd_bin", "phq_bin"), strata = "collapserace", data=mydata_complete, argsNormal = list(NULL), argsNonNormal = list(var.equal = TRUE))
@@ -119,6 +137,10 @@ kable(print(table_outcomes, contDigits=1, varLabel = T, printToggle=FALSE), book
 table_predictors_notstrat <- CreateTableOne(vars=c("age", "gender", "collapseeduc", "public_benefits", "collapsemarital", "number_children", "years_cityflint", "confidants2"), data=mydata_complete, argsNormal = list(NULL), argsNonNormal = list(var.equal = TRUE))
 
 table_outcomes_notstrat <- CreateTableOne(vars=c("num_time_notice", "blood_test_after_april_2014", "elevated_lead_after_april_2014", "rashes_after_april_2014", "hairloss_after_april_2014", "nausea_after_april_2014", "irritable_after_april_2014", "overall_collapse", "ptsd_bin", "phq_bin"), data=mydata_complete, argsNormal = list(NULL), argsNonNormal = list(var.equal = TRUE))
+
+kable(print(table_missing, contDigits=1, varLabel = T, printToggle=FALSE), booktabs=T) %>% add_indent(c(4:6, 8:12, 14:16, 18:20, 26:28, 30:32, 34:36, 38:40, 42:44)) %>% kable_styling(position="center")
+
+test <- print(table_missing, contDigits=1, varLabel = T, printToggle=FALSE)
 
 kable(print(table_predictors_notstrat, contDigits=1, varLabel = T, printToggle=FALSE), booktabs=T) %>% add_indent(c(5:9, 11:13, 15:17)) %>% kable_styling(position="center")
 
