@@ -5,3 +5,5 @@ the data needed to actually reproduce these analyses cannot be made publicly ava
 It includes R Markdown files to reproduce the analyses for:
 
 1. Our 2020 paper on the adult health effects of the Flint Water Crisis (paperone_adult_health.Rmd)
+
+2. Our 2020 paper on the child health effects of the Flint Water Crisis (papertwo_child_health.Rmd)
