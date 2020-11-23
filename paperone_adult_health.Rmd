@@ -100,7 +100,7 @@ flintdat <- data.frame("zip" = zcta1$ZCTA5CE10, "geometry" = zcta1$geometry)
 fils <- unzip("~/Desktop/Research/Jerel Flint/Analyses/tl_2019_26_place.zip")
 flint_boundary <- st_read(fils[4]) %>% filter(NAME=="Flint")
 
-totalpop <- data.frame(table(mydata_complete$current_zip))
+totalpop <- data.frame(table(mydata$current_zip))
 colnames(totalpop) <- c("current_zip", "pop")
 
 flintdat2 <- full_join(flintdat, totalpop, by=c("zip" = "current_zip")) 
@@ -126,17 +126,17 @@ var_label(mydata_complete$phq_bin) <- "Depression/Anxiety"
 
 table_missing <- CreateTableOne(vars=c("age", "gender", "collapseeduc", "public_benefits", "collapsemarital", "number_children", "years_cityflint", "confidants2", "num_time_notice", "blood_test_after_april_2014", "elevated_lead_after_april_2014", "rashes_after_april_2014", "hairloss_after_april_2014", "nausea_after_april_2014", "irritable_after_april_2014", "overall_collapse", "ptsd_bin", "phq_bin"), strata = "include", data=mydata, argsNormal = list(NULL), argsNonNormal = list(var.equal = TRUE))
 
-table_predictors <- CreateTableOne(vars=c("age", "gender", "collapseeduc", "public_benefits", "collapsemarital", "number_children", "years_cityflint", "confidants2"), strata = "collapserace", data=mydata_complete, argsNormal = list(NULL), argsNonNormal = list(var.equal = TRUE))
+table_predictors <- CreateTableOne(vars=c("age", "gender", "collapseeduc", "public_benefits", "collapsemarital", "number_children", "years_cityflint", "confidants2"), strata = "collapserace", data=mydata, includeNA = TRUE, argsNormal = list(NULL), argsNonNormal = list(var.equal = TRUE))
 
-table_outcomes <- CreateTableOne(vars=c("num_time_notice", "blood_test_after_april_2014", "elevated_lead_after_april_2014", "rashes_after_april_2014", "hairloss_after_april_2014", "nausea_after_april_2014", "irritable_after_april_2014", "overall_collapse", "ptsd_bin", "phq_bin"), strata = "collapserace", data=mydata_complete, argsNormal = list(NULL), argsNonNormal = list(var.equal = TRUE))
+table_outcomes <- CreateTableOne(vars=c("num_time_notice", "blood_test_after_april_2014", "elevated_lead_after_april_2014", "rashes_after_april_2014", "hairloss_after_april_2014", "nausea_after_april_2014", "irritable_after_april_2014", "overall_collapse", "ptsd_bin", "phq_bin"), strata = "collapserace", data=mydata, argsNormal = list(NULL), argsNonNormal = list(var.equal = TRUE), includeNA = TRUE)
 
 kable(print(table_predictors, contDigits=1, varLabel = T, printToggle=FALSE), booktabs=T) %>% add_indent(c(5:9, 11:13, 15:17)) %>% kable_styling(position="center")
 
 kable(print(table_outcomes, contDigits=1, varLabel = T, printToggle=FALSE), booktabs=T) %>% add_indent(c(4:6, 8:10, 12:14, 16:18, 20:22, 24:26)) %>% kable_styling(position="center")
 
-table_predictors_notstrat <- CreateTableOne(vars=c("age", "gender", "collapseeduc", "public_benefits", "collapsemarital", "number_children", "years_cityflint", "confidants2"), data=mydata_complete, argsNormal = list(NULL), argsNonNormal = list(var.equal = TRUE))
+table_predictors_notstrat <- CreateTableOne(vars=c("age", "gender", "collapseeduc", "public_benefits", "collapsemarital", "number_children", "years_cityflint", "confidants2"), data=mydata, argsNormal = list(NULL), argsNonNormal = list(var.equal = TRUE), includeNA=TRUE)
 
-table_outcomes_notstrat <- CreateTableOne(vars=c("num_time_notice", "blood_test_after_april_2014", "elevated_lead_after_april_2014", "rashes_after_april_2014", "hairloss_after_april_2014", "nausea_after_april_2014", "irritable_after_april_2014", "overall_collapse", "ptsd_bin", "phq_bin"), data=mydata_complete, argsNormal = list(NULL), argsNonNormal = list(var.equal = TRUE))
+table_outcomes_notstrat <- CreateTableOne(vars=c("num_time_notice", "blood_test_after_april_2014", "elevated_lead_after_april_2014", "rashes_after_april_2014", "hairloss_after_april_2014", "nausea_after_april_2014", "irritable_after_april_2014", "overall_collapse", "ptsd_bin", "phq_bin"), data=mydata, argsNormal = list(NULL), argsNonNormal = list(var.equal = TRUE), includeNA=TRUE)
 
 kable(print(table_missing, contDigits=1, varLabel = T, printToggle=FALSE), booktabs=T) %>% add_indent(c(4:6, 8:12, 14:16, 18:20, 26:28, 30:32, 34:36, 38:40, 42:44)) %>% kable_styling(position="center")
 
