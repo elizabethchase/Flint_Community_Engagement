@@ -245,7 +245,31 @@ subdat <- data.frame("Outcome" = rep("Overall Symptoms", 6), "Variable" = c("Gen
 effects_mat <- rbind(effects_mat, subdat)
 ```
 
-And now modeling for adult experiences:
+Now we tidy up our effects matrix and apply a multiple testing correction:
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+effects_mat$BHpvalue <- p.adjust(effects_mat$Pvalue, method="BH")
+
+effects_mat$lower <- case_when(
+  effects_mat$Outcome=="Overall Symptoms" ~ effects_mat$Estimate - 1.96*effects_mat$StErr,
+  effects_mat$Outcome!="Overall Symptoms" ~ exp(effects_mat$Estimate - 1.96*effects_mat$StErr)
+)
+
+effects_mat$upper <- case_when(
+  effects_mat$Outcome=="Overall Symptoms" ~ effects_mat$Estimate + 1.96*effects_mat$StErr,
+  effects_mat$Outcome!="Overall Symptoms" ~ exp(effects_mat$Estimate + 1.96*effects_mat$StErr)
+)
+
+effects_mat$effect <- case_when(
+  effects_mat$Outcome=="Overall Symptoms" ~ effects_mat$Estimate,
+  effects_mat$Outcome!="Overall Symptoms" ~ exp(effects_mat$Estimate)
+)
+
+effects_mat$label <- paste0(round(effects_mat$effect, digits=1), " (", round(effects_mat$lower, digits = 1), ", ", round(effects_mat$upper, digits = 1), ")")
+
+pretty_effects <- select(effects_mat, Outcome, Variable, label, BHpvalue)
+```
+
+And now modeling for adult experiences (dropped from paper 2; will be used elsewhere:
 ```{r, echo=TRUE, message=FALSE, warning=FALSE}
 ##Assembling child health indicators:
 child_sum <- group_by(child_adult, unique_id) %>% summarise(child_screen = as.numeric(sum(as.numeric(gettested)-1, na.rm=TRUE) > 0), child_symps = sum(overall_symp), child_bll = as.numeric(sum(as.numeric(elevbll)-1, na.rm=TRUE) > 0), child_rash = as.numeric(sum(as.numeric(rash)-1, na.rm=TRUE) > 0), child_hair = as.numeric(sum(as.numeric(hair)-1, na.rm=TRUE) > 0), child_learning = as.numeric(sum(as.numeric(learn)-1, na.rm=TRUE) > 0), child_hyper = as.numeric(sum(as.numeric(hyper)-1, na.rm=TRUE) > 0), child_irritable = as.numeric(sum(as.numeric(irritable)-1, na.rm=TRUE) > 0))
@@ -296,26 +320,3 @@ subdat <- data.frame("Outcome" = rep("Depression", 15), "Variable" = c("Guardian
 effects_mat <- rbind(effects_mat, subdat)
 ```
 
-Now we tidy up our effects matrix and apply a multiple testing correction:
-```{r, echo=TRUE, message=FALSE, warning=FALSE}
-effects_mat$BHpvalue <- p.adjust(effects_mat$Pvalue, method="BH")
-
-effects_mat$lower <- case_when(
-  effects_mat$Outcome=="Overall Symptoms" ~ effects_mat$Estimate - 1.96*effects_mat$StErr,
-  effects_mat$Outcome!="Overall Symptoms" ~ exp(effects_mat$Estimate - 1.96*effects_mat$StErr)
-)
-
-effects_mat$upper <- case_when(
-  effects_mat$Outcome=="Overall Symptoms" ~ effects_mat$Estimate + 1.96*effects_mat$StErr,
-  effects_mat$Outcome!="Overall Symptoms" ~ exp(effects_mat$Estimate + 1.96*effects_mat$StErr)
-)
-
-effects_mat$effect <- case_when(
-  effects_mat$Outcome=="Overall Symptoms" ~ effects_mat$Estimate,
-  effects_mat$Outcome!="Overall Symptoms" ~ exp(effects_mat$Estimate)
-)
-
-effects_mat$label <- paste0(round(effects_mat$effect, digits=1), " (", round(effects_mat$lower, digits = 1), ", ", round(effects_mat$upper, digits = 1), ")")
-
-pretty_effects <- select(effects_mat, Outcome, Variable, label, BHpvalue)
-```
