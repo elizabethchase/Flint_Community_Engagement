@@ -1,0 +1,575 @@
+---
+title: "Manuscript 3: Political Beliefs and Attitudes"
+author: "Elizabeth Chase"
+date: "12/10/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE, echo=TRUE}
+library(knitr)
+opts_chunk$set(collapse=TRUE, fig.align='center', out.extra = '', fig.pos= "h", tidy=TRUE, tidy.opts=list(blank=TRUE, width.cutoff=40), warning=FALSE,message=FALSE)
+options(scipen=999)
+
+rm(list=ls())
+
+library(gridExtra)
+library(RColorBrewer)
+library(tableone)
+library(latex2exp)
+library(labelled)
+library(kableExtra)
+library(logistf)
+library(MASS)
+library(tidyverse)
+
+load("~/Desktop/Research/Jerel Flint/Analyses/child_long.RData")
+load("~/Desktop/Research/Jerel Flint/Analyses/adult_data_eliz_fixed.RData")
+
+child_final$gettested <- ifelse(child_final$blood_test_after_april_2014=="Yes" & child_final$blood_test_before_april_2014=="No", 1, ifelse(is.na(child_final$blood_test_after_april_2014) | is.na(child_final$blood_test_before_april_2014), NA_real_, 0))
+
+child_final$elevbll <- ifelse(child_final$elevated_lead_after_april_2014=="Yes" & child_final$elevated_lead_before_april_2014=="No", 1, ifelse(is.na(child_final$elevated_lead_after_april_2014) | is.na(child_final$elevated_lead_before_april_2014), NA_real_, 0))
+
+child_final$rash <- ifelse(child_final$rash_after_april_2014=="Yes" & child_final$rash_before_april_2014=="No", 1, ifelse(is.na(child_final$rash_after_april_2014) | is.na(child_final$rash_before_april_2014), NA_real_, 0))
+
+child_final$hair <- ifelse(child_final$hairloss_after_april_2014=="Yes" & child_final$hairloss_before_april_2014=="No", 1, ifelse(is.na(child_final$hairloss_after_april_2014) | is.na(child_final$hairloss_before_april_2014), NA_real_, 0))
+
+child_final$learn <- ifelse(child_final$learning_after_april_2014=="Yes" & child_final$learning_before_april_2014=="No", 1, ifelse(is.na(child_final$learning_after_april_2014) | is.na(child_final$learning_before_april_2014), NA_real_, 0))
+
+child_final$hyper <- ifelse(child_final$hyper_after_april_2014=="Yes" & child_final$hyper_before_april_2014=="No", 1, ifelse(is.na(child_final$hyper_after_april_2014) | is.na(child_final$hyper_before_april_2014), NA_real_, 0))
+
+child_final$irritable <- ifelse(child_final$irritable_after_april_2014=="Yes" & child_final$irritable_before_april_2014=="No", 1, ifelse(is.na(child_final$irritable_after_april_2014) | is.na(child_final$irritable_before_april_2014), NA_real_, 0))
+
+symp_sub <- select(child_final, gettested, elevbll, rash, hair, learn, hyper, irritable)
+
+symp_sub$overall_symp <- rowSums(symp_sub, na.rm=TRUE)
+symp_sub$unique_id <- child_final$unique_id
+
+symp_collapse <- group_by(symp_sub, unique_id) %>% summarise(child_test = sum(gettested, na.rm=TRUE), child_bll = sum(elevbll, na.rm=TRUE), child_rash = sum(rash, na.rm=TRUE), child_hair = sum(hair, na.rm=TRUE), child_learn = sum(learn, na.rm=TRUE), child_hyper = sum(hyper, na.rm=TRUE), child_irritable = sum(irritable, na.rm=TRUE), child_overall = sum(overall_symp, na.rm=TRUE))
+
+symp_collapse$any_child_test <- ifelse(symp_collapse$child_test > 0, 1, 0)
+symp_collapse$any_child_bll <- ifelse(symp_collapse$child_bll > 0, 1, 0)
+symp_collapse$any_child_rash <- ifelse(symp_collapse$child_rash > 0, 1, 0)
+symp_collapse$any_child_hair <- ifelse(symp_collapse$child_hair > 0, 1, 0)
+symp_collapse$any_child_learn <- ifelse(symp_collapse$child_learn > 0, 1, 0)
+symp_collapse$any_child_hyper <- ifelse(symp_collapse$child_hyper > 0, 1, 0)
+symp_collapse$any_child_irritable <- ifelse(symp_collapse$child_irritable > 0, 1, 0)
+symp_collapse$any_child_overall <- ifelse(symp_collapse$child_overall > 0, 1, 0)
+
+adult_clean_eliz$bloodtest <- ifelse(adult_clean_eliz$blood_test_after_april_2014=="Yes" & adult_clean_eliz$blood_test_before_april_2014=="No", 1, ifelse(is.na(adult_clean_eliz$blood_test_after_april_2014) | is.na(adult_clean_eliz$blood_test_before_april_2014), NA_real_, 0))
+adult_clean_eliz$elev_bll <- ifelse(adult_clean_eliz$elevated_lead_after_april_2014=="Yes" & adult_clean_eliz$elevated_lead_before_april_2014=="No", 1, ifelse(is.na(adult_clean_eliz$elevated_lead_after_april_2014) | is.na(adult_clean_eliz$elevated_lead_before_april_2014), NA_real_, 0))
+adult_clean_eliz$rashes <- ifelse(adult_clean_eliz$rashes_after_april_2014=="Yes" & adult_clean_eliz$rashes_before_april_2014=="No", 1, ifelse(is.na(adult_clean_eliz$rashes_after_april_2014) | is.na(adult_clean_eliz$rashes_before_april_2014), NA_real_, 0))
+adult_clean_eliz$hairloss <- ifelse(adult_clean_eliz$hairloss_after_april_2014=="Yes" & adult_clean_eliz$hairloss_before_april_2014=="No", 1, ifelse(is.na(adult_clean_eliz$hairloss_after_april_2014) | is.na(adult_clean_eliz$hairloss_before_april_2014), NA_real_, 0))
+adult_clean_eliz$nausea <- ifelse(adult_clean_eliz$nausea_after_april_2014=="Yes" & adult_clean_eliz$nausea_before_april_2014=="No", 1, ifelse(is.na(adult_clean_eliz$nausea_after_april_2014) | is.na(adult_clean_eliz$nausea_before_april_2014), NA_real_, 0))
+adult_clean_eliz$irritable <- ifelse(adult_clean_eliz$irritable_after_april_2014=="Yes" & adult_clean_eliz$irritable_before_april_2014=="No", 1, ifelse(is.na(adult_clean_eliz$irritable_after_april_2014) | is.na(adult_clean_eliz$irritable_before_april_2014), NA_real_, 0))
+
+symp_sub2 <- select(adult_clean_eliz, bloodtest, elev_bll, rashes, hairloss, nausea, irritable)
+adult_clean_eliz$overall_symps <- rowSums(symp_sub2, na.rm=TRUE)
+adult_clean_eliz$any_symps <- ifelse(adult_clean_eliz$overall_symps > 0, 1, 0)
+
+subadult <- select(adult_clean_eliz, inclusion, unique_id, age, gender, collapserace, collapseeduc, have_health_insurance, public_benefits, years_cityflint, current_zip, intent_harm, water_exaggerated, children_health_harmed, discriminatory_poor, racially_motivated, trust_government_in_future, drink_tap_in_three_years, satisfied_flint_government, satisfied_state_government, satisfied_federal_government, political_affiliation, nightmares, avoided_thinking_crisis, onguard_watchful, numb_detached, felt_guilty, days_nervous_2weeks, days_worrying_2weeks, days_nopleasure_2weeks, days_depressed_2weeks, ptsdscore, phq, confidants2, number_children, employ_status, bloodtest, elev_bll, rashes, hairloss, nausea, irritable, overall_symps, any_symps)
+
+adult_child <- left_join(subadult, symp_collapse, by=c("unique_id"))
+
+adult_child$any_child_test <- ifelse(adult_child$number_children==0, 0, adult_child$any_child_test)
+adult_child$child_test <- ifelse(adult_child$number_children==0, 0, adult_child$child_test)
+adult_child$any_child_bll <- ifelse(adult_child$number_children==0, 0, adult_child$any_child_bll)
+adult_child$child_bll <- ifelse(adult_child$number_children==0, 0, adult_child$child_bll)
+adult_child$any_child_rash <- ifelse(adult_child$number_children==0, 0, adult_child$any_child_rash)
+adult_child$child_rash <- ifelse(adult_child$number_children==0, 0, adult_child$child_rash)
+adult_child$any_child_hair <- ifelse(adult_child$number_children==0, 0, adult_child$any_child_hair)
+adult_child$child_hair <- ifelse(adult_child$number_children==0, 0, adult_child$child_hair)
+adult_child$any_child_learn <- ifelse(adult_child$number_children==0, 0, adult_child$any_child_learn)
+adult_child$child_learn <- ifelse(adult_child$number_children==0, 0, adult_child$child_learn)
+adult_child$any_child_hyper <- ifelse(adult_child$number_children==0, 0, adult_child$any_child_hyper)
+adult_child$child_hyper <- ifelse(adult_child$number_children==0, 0, adult_child$child_hyper)
+adult_child$any_child_irritable <- ifelse(adult_child$number_children==0, 0, adult_child$any_child_irritable)
+adult_child$child_irritable <- ifelse(adult_child$number_children==0, 0, adult_child$child_irritable)
+adult_child$any_child_overall <- ifelse(adult_child$number_children==0, 0, adult_child$any_child_overall)
+adult_child$child_overall <- ifelse(adult_child$number_children==0, 0, adult_child$child_overall)
+
+adult_child$intent_harm_tri <- case_when(
+  adult_child$intent_harm=="Strongly Disagree" | adult_child$intent_harm=="Disagree" ~ "Disagree",
+  adult_child$intent_harm=="Neutral" ~ "Neutral",
+  adult_child$intent_harm=="Agree" | adult_child$intent_harm=="Strongly Agree" ~ "Agree",
+  is.na(adult_child$intent_harm) ~ NA_character_
+)
+
+adult_child$water_exaggerated_tri <- case_when(
+  adult_child$water_exaggerated=="Strongly Disagree" | adult_child$water_exaggerated=="Disagree" ~ "Disagree",
+  adult_child$water_exaggerated=="Neutral" ~ "Neutral",
+  adult_child$water_exaggerated=="Agree" | adult_child$water_exaggerated=="Strongly Agree" ~ "Agree",
+  is.na(adult_child$water_exaggerated) ~ NA_character_
+)
+
+adult_child$children_health_harmed_tri <- case_when(
+  adult_child$children_health_harmed=="Strongly Disagree" | adult_child$children_health_harmed=="Disagree" ~ "Disagree",
+  adult_child$children_health_harmed=="Neutral" ~ "Neutral",
+  adult_child$children_health_harmed=="Agree" | adult_child$children_health_harmed=="Strongly Agree" ~ "Agree",
+  is.na(adult_child$children_health_harmed) ~ NA_character_
+)
+
+adult_child$discriminatory_poor_tri <- case_when(
+  adult_child$discriminatory_poor=="Strongly Disagree" | adult_child$discriminatory_poor=="Disagree" ~ "Disagree",
+  adult_child$discriminatory_poor=="Neutral" ~ "Neutral",
+  adult_child$discriminatory_poor=="Agree" | adult_child$discriminatory_poor=="Strongly Agree" ~ "Agree",
+  is.na(adult_child$discriminatory_poor) ~ NA_character_
+)
+
+adult_child$racially_motivated_tri <- case_when(
+  adult_child$racially_motivated=="Strongly Disagree" | adult_child$racially_motivated=="Disagree" ~ "Disagree",
+  adult_child$racially_motivated=="Neutral" ~ "Neutral",
+  adult_child$racially_motivated=="Agree" | adult_child$racially_motivated=="Strongly Agree" ~ "Agree",
+  is.na(adult_child$racially_motivated) ~ NA_character_
+)
+
+adult_child$trust_government_in_future_tri <- case_when(
+  adult_child$trust_government_in_future=="Strongly Disagree" | adult_child$trust_government_in_future=="Disagree" ~ "Disagree",
+  adult_child$trust_government_in_future=="Neutral" ~ "Neutral",
+  adult_child$trust_government_in_future=="Agree" | adult_child$trust_government_in_future=="Strongly Agree" ~ "Agree",
+  is.na(adult_child$trust_government_in_future) ~ NA_character_
+)
+
+adult_child$drink_tap_in_three_years_tri <- case_when(
+  adult_child$drink_tap_in_three_years=="Strongly Disagree" | adult_child$drink_tap_in_three_years=="Disagree" ~ "Disagree",
+  adult_child$drink_tap_in_three_years=="Neutral" ~ "Neutral",
+  adult_child$drink_tap_in_three_years=="Agree" | adult_child$drink_tap_in_three_years=="Strongly Agree" ~ "Agree",
+  is.na(adult_child$drink_tap_in_three_years) ~ NA_character_
+)
+
+adult_child$satisfied_flint_government_tri <- case_when(
+  adult_child$satisfied_flint_government=="Strongly Disagree" | adult_child$satisfied_flint_government=="Disagree" ~ "Disagree",
+  adult_child$satisfied_flint_government=="Neutral" ~ "Neutral",
+  adult_child$satisfied_flint_government=="Agree" | adult_child$satisfied_flint_government=="Strongly Agree" ~ "Agree",
+  is.na(adult_child$satisfied_flint_government) ~ NA_character_
+)
+
+adult_child$satisfied_state_government_tri <- case_when(
+  adult_child$satisfied_state_government=="Strongly Disagree" | adult_child$satisfied_state_government=="Disagree" ~ "Disagree",
+  adult_child$satisfied_state_government=="Neutral" ~ "Neutral",
+  adult_child$satisfied_state_government=="Agree" | adult_child$satisfied_state_government=="Strongly Agree" ~ "Agree",
+  is.na(adult_child$satisfied_state_government) ~ NA_character_
+)
+
+adult_child$satisfied_federal_government_tri <- case_when(
+  adult_child$satisfied_federal_government=="Strongly Disagree" | adult_child$satisfied_federal_government=="Disagree" ~ "Disagree",
+  adult_child$satisfied_federal_government=="Neutral" ~ "Neutral",
+  adult_child$satisfied_federal_government=="Agree" | adult_child$satisfied_federal_government=="Strongly Agree" ~ "Agree",
+  is.na(adult_child$satisfied_federal_government) ~ NA_character_
+)
+
+adult_child$gendercollapse <- ifelse(adult_child$gender=="Transgender Woman" | adult_child$gender=="Female", "Female", ifelse(is.na(adult_child$gender), NA_character_, "Male"))
+
+rm(list=c("adult_clean_eliz", "subadult", "child_final", "symp_collapse", "symp_sub", "symp_sub2"))
+```
+
+First, we get the baseline tables and descriptives:
+```{r, include=FALSE, echo=TRUE}
+var_label(adult_child$age) <- "Age"
+var_label(adult_child$gendercollapse) <- "Gender"
+var_label(adult_child$collapserace) <- "Race"
+var_label(adult_child$collapseeduc) <- "Education"
+var_label(adult_child$have_health_insurance) <- "Health insurance"
+var_label(adult_child$public_benefits) <- "Public benefits status"
+var_label(adult_child$current_zip) <- "Zip code"
+var_label(adult_child$years_cityflint) <- "Years lived in Flint"
+var_label(adult_child$intent_harm_tri) <- "The water source switch was intended to harm Flint residents."
+var_label(adult_child$water_exaggerated_tri) <- "People have made the water issues a bigger deal than reality."
+var_label(adult_child$children_health_harmed_tri) <- "Children in Flint are going to have health problems in future due to the water crisis."
+var_label(adult_child$discriminatory_poor_tri) <- "The water source switch was discriminatory against lower income Flint residents."
+var_label(adult_child$racially_motivated_tri) <- "The water source switch was racially motivated."
+var_label(adult_child$trust_government_in_future_tri) <- "I am likely to trust the government on water/environmental issues in future."
+var_label(adult_child$drink_tap_in_three_years_tri) <- "Three years from now, I am likely to drink primarily tap water at home."
+var_label(adult_child$satisfied_federal_government_tri) <- "I am satisfied with the federal government's role in addressing the Flint water issues."
+var_label(adult_child$satisfied_flint_government_tri) <- "I am satisfied with the Flint government's role in addressing the Flint water issues."
+var_label(adult_child$satisfied_state_government_tri) <- "I am satisfied with the Michigan government's role in addressing the Flint water issues."
+var_label(adult_child$political_affiliation) <- "Political affiliation"
+var_label(adult_child$nightmares) <- "In the last month, I have had nightmares about the water crisis."
+var_label(adult_child$avoided_thinking_crisis) <- "In the last month, I have avoided thinking about the water crisis."
+var_label(adult_child$onguard_watchful) <- "In the last month, I have been constantly on guard."
+var_label(adult_child$numb_detached) <- "In the last month, I have felt numb/detached from my surroundings."
+var_label(adult_child$felt_guilty) <- "In the last month, I have felt guilty about the water crisis."
+var_label(adult_child$days_nervous_2weeks) <- "In the last two weeks, how many days have you felt nervous?"
+var_label(adult_child$days_worrying_2weeks) <- "In the last two weeks, how many days have you worried uncontrollably?"
+var_label(adult_child$days_nopleasure_2weeks) <- "In the last two weeks, how many days have you felt little interest/pleasure in doing things?"
+var_label(adult_child$days_depressed_2weeks) <- "In the last two weeks, how many days have you felt depressed?"
+var_label(adult_child$ptsdscore) <- "PTSD-5 Score"
+var_label(adult_child$phq) <- "PHQ-4 Score"
+var_label(adult_child$confidants2) <- "Number of confidants"
+var_label(adult_child$number_children) <- "Number of children in care"
+var_label(adult_child$employ_status) <- "Employment status"
+var_label(adult_child$overall_symps) <- "Number of symptoms experienced"
+
+adult_child$any_symps <- factor(adult_child$any_symps, levels=c(0, 1), labels=c("No", "Yes"))
+adult_child$any_child_test <- factor(adult_child$any_child_test, levels=c(0, 1), labels=c("No", "Yes"))
+adult_child$any_child_bll <- factor(adult_child$any_child_bll, levels=c(0, 1), labels=c("No", "Yes"))
+adult_child$any_child_rash <- factor(adult_child$any_child_rash, levels=c(0, 1), labels=c("No", "Yes"))
+adult_child$any_child_hair <- factor(adult_child$any_child_hair, levels=c(0, 1), labels=c("No", "Yes"))
+adult_child$any_child_learn <- factor(adult_child$any_child_learn, levels=c(0, 1), labels=c("No", "Yes"))
+adult_child$any_child_hyper <- factor(adult_child$any_child_hyper, levels=c(0, 1), labels=c("No", "Yes"))
+adult_child$any_child_irritable <- factor(adult_child$any_child_irritable, levels=c(0, 1), labels=c("No", "Yes"))
+adult_child$any_child_overall <- factor(adult_child$any_child_overall, levels=c(0, 1), labels=c("No", "Yes"))
+var_label(adult_child$any_symps) <- "Experienced any symptoms?"
+var_label(adult_child$any_child_test) <- "Have at least one child tested for BLLs?"
+var_label(adult_child$any_child_bll) <- "Have at least one child with elevated BLLs?"
+var_label(adult_child$any_child_rash) <- "Have at least one child with rash?"
+var_label(adult_child$any_child_hair) <- "Have at least one child with hair loss?"
+var_label(adult_child$any_child_learn) <- "Have at least one child with learning delays?"
+var_label(adult_child$any_child_hyper) <- "Have at least one child with hyperactivity?"
+var_label(adult_child$any_child_irritable) <- "Have at least one child with irritability?"
+var_label(adult_child$any_child_overall) <- "Have at least one child experience any symptom?"
+
+adult_child$bloodtest <- factor(adult_child$bloodtest, levels=c(0, 1), labels=c("No", "Yes"))
+adult_child$elev_bll <- factor(adult_child$elev_bll, levels=c(0, 1), labels=c("No", "Yes"))
+adult_child$rashes <- factor(adult_child$rashes, levels=c(0, 1), labels=c("No", "Yes"))
+adult_child$hairloss <- factor(adult_child$hairloss, levels=c(0, 1), labels=c("No", "Yes"))
+adult_child$nausea <- factor(adult_child$nausea, levels=c(0, 1), labels=c("No", "Yes"))
+adult_child$irritable <- factor(adult_child$irritable, levels=c(0, 1), labels=c("No", "Yes"))
+var_label(adult_child$bloodtest) <- "Tested for BLLs?"
+var_label(adult_child$elev_bll) <- "Had elevated BLLs?"
+var_label(adult_child$rashes) <- "Had rashes?"
+var_label(adult_child$hairloss) <- "Had hair loss?"
+var_label(adult_child$nausea) <- "Had nausea?"
+var_label(adult_child$irritable) <- "Had irritability?"
+var_label(adult_child$overall_symps) <- "Total number of symptoms"
+
+table_predictors <- CreateTableOne(vars=c("age", "gendercollapse", "collapseeduc", "have_health_insurance", "public_benefits", "employ_status", "political_affiliation", "years_cityflint", "current_zip", "number_children", "confidants2", "any_symps", "bloodtest", "elev_bll", "rashes", "hairloss", "nausea", "irritable", "overall_symps", "any_child_overall", "any_child_test", "any_child_bll", "any_child_rash", "any_child_hair", "any_child_learn", "any_child_hyper", "any_child_irritable"), strata = "collapserace", data=adult_child, includeNA = TRUE, argsNormal = list(NULL), argsNonNormal = list(var.equal = TRUE))
+
+table_predictors_nostrat <- CreateTableOne(vars=c("age", "gendercollapse", "collapseeduc", "have_health_insurance", "public_benefits", "employ_status", "political_affiliation", "years_cityflint", "current_zip", "number_children", "confidants2", "any_symps", "bloodtest", "elev_bll", "rashes", "hairloss", "nausea", "irritable", "overall_symps", "any_child_overall", "any_child_test", "any_child_bll", "any_child_rash", "any_child_hair", "any_child_learn", "any_child_hyper", "any_child_irritable"), data=adult_child, includeNA = TRUE, argsNormal = list(NULL), argsNonNormal = list(var.equal = TRUE))
+
+table_outcomes <- CreateTableOne(vars=c("intent_harm_tri", "water_exaggerated_tri", "children_health_harmed_tri", "discriminatory_poor_tri", "racially_motivated_tri", "trust_government_in_future_tri", "drink_tap_in_three_years_tri", "satisfied_federal_government_tri", "satisfied_state_government_tri", "satisfied_flint_government_tri", "nightmares", "avoided_thinking_crisis", "onguard_watchful", "numb_detached", "felt_guilty", "days_nervous_2weeks", "days_worrying_2weeks", "days_nopleasure_2weeks", "days_depressed_2weeks", "ptsdscore", "phq"), strata = "collapserace", data=adult_child, argsNormal = list(NULL), argsNonNormal = list(var.equal = TRUE), includeNA = TRUE)
+
+table_outcomes_nostrat <- CreateTableOne(vars=c("intent_harm_tri", "water_exaggerated_tri", "children_health_harmed_tri", "discriminatory_poor_tri", "racially_motivated_tri", "trust_government_in_future_tri", "drink_tap_in_three_years_tri", "satisfied_federal_government_tri", "satisfied_state_government_tri", "satisfied_flint_government_tri", "nightmares", "avoided_thinking_crisis", "onguard_watchful", "numb_detached", "felt_guilty", "days_nervous_2weeks", "days_worrying_2weeks", "days_nopleasure_2weeks", "days_depressed_2weeks", "ptsdscore", "phq"), data=adult_child, argsNormal = list(NULL), argsNonNormal = list(var.equal = TRUE), includeNA = TRUE)
+
+kable(print(table_predictors, contDigits=1, varLabel = T, printToggle=FALSE), booktabs=T) %>% add_indent(c(5:9, 11:13, 15:17, 19:23, 25:29, 32:38, 43:45, 47:49, 51:53, 55:57, 59:61, 63:65)) %>% kable_styling(position="center")
+
+kable(print(table_predictors_nostrat, contDigits=1, varLabel = T, printToggle=FALSE), booktabs=T) %>% add_indent(c(5:9, 11:13, 15:17, 19:23, 25:29, 32:38, 43:45, 47:49, 51:53, 55:57, 59:61, 63:65)) %>% kable_styling(position="center")
+
+kable(print(table_outcomes, contDigits=1, varLabel = T, printToggle=FALSE), booktabs=T) %>% add_indent(c(3:5, 7:9, 11:13, 15:17, 19:21, 23:25, 27:30, 32:34, 36:38, 40:42, 49:53, 55:59, 61:65, 67:71)) %>% kable_styling(position="center")
+
+kable(print(table_outcomes_nostrat, contDigits=1, varLabel = T, printToggle=FALSE), booktabs=T) %>% add_indent(c(3:5, 7:9, 11:13, 15:17, 19:21, 23:25, 27:30, 32:34, 36:38, 40:42, 49:53, 55:59, 61:65, 67:71)) %>% kable_styling(position="center")
+```
+
+Now, we start fitting the trinary proportional odds models that Jerel wanted to see for the mental health/attitudes outcomes:
+```{r, include=FALSE, echo=TRUE}
+adult_child$zipcollapse <- case_when(
+  adult_child$current_zip==48502 ~"48503", 
+  adult_child$current_zip!=48502 ~ as.character(adult_child$current_zip)
+)
+
+adult_child$partycollapse <- ifelse(adult_child$political_affiliation=="An Independent" | adult_child$political_affiliation=="Other", "Other", adult_child$political_affiliation)
+
+adult_child$pubbencollapse <- case_when(
+  adult_child$public_benefits=="Don't know/Unsure" | adult_child$public_benefits=="No" ~ "No/Unsure",
+  adult_child$public_benefits=="Yes" ~ "Yes",
+  is.na(adult_child$public_benefits) ~ NA_character_)
+
+effects <- data.frame("Outcome" = NA, "Predictor" = NA, "Effect" = NA, "SE" = NA)
+
+intent_model_layer1 <- polr(factor(intent_harm_tri, levels=c("Disagree", "Neutral", "Agree"), ordered = TRUE) ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse, data = adult_child, Hess = TRUE)
+
+summary(intent_model_layer1)
+
+intent_model_layer2 <- polr(factor(intent_harm_tri, levels=c("Disagree", "Neutral", "Agree"), ordered = TRUE) ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse + overall_symps + any_child_overall, data = adult_child, Hess = TRUE)
+
+summary(intent_model_layer2)
+
+subdat <- data.frame("Outcome" = rep("The water source switch was intended to harm Flint residents.", 16), "Predictor" = c("Age", "Male", "Other Race", "White Race", "Receives public benefits", "Republican", "Other political party", "Years in Flint", "Number of confidants", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Number of adult symptoms", "Had child report at least one symptom"), "Effect" = c(summary(intent_model_layer1)$coefficients[1:14, 1], summary(intent_model_layer2)$coefficients[15:16, 1]), "SE" = c(summary(intent_model_layer1)$coefficients[1:14, 2], summary(intent_model_layer2)$coefficients[15:16, 2]))
+
+effects <- rbind(effects, subdat)
+
+exag_model_layer1 <- polr(factor(water_exaggerated_tri, levels=c("Disagree", "Neutral", "Agree"), ordered = TRUE) ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse, data = adult_child, Hess = TRUE)
+
+summary(exag_model_layer1)
+
+exag_model_layer2 <- polr(factor(water_exaggerated_tri, levels=c("Disagree", "Neutral", "Agree"), ordered = TRUE) ~ age + gendercollapse + collapserace + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse + overall_symps + any_child_overall, data = adult_child, Hess = TRUE)
+
+summary(exag_model_layer2)
+
+subdat <- data.frame("Outcome" = rep("People have made the water issues a bigger deal than reality.", 16), "Predictor" = c("Age", "Male", "Other Race", "White Race", "Receives public benefits", "Republican", "Other political party", "Years in Flint", "Number of confidants", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Number of adult symptoms", "Had child report at least one symptom"), "Effect" = c(summary(exag_model_layer1)$coefficients[1:14, 1], summary(exag_model_layer2)$coefficients[15:16, 1]), "SE" = c(summary(exag_model_layer1)$coefficients[1:14, 2], summary(exag_model_layer2)$coefficients[15:16, 2]))
+
+
+effects <- rbind(effects, subdat)
+
+harm_model_layer1 <- polr(factor(children_health_harmed_tri, levels=c("Disagree", "Neutral", "Agree"), ordered = TRUE) ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse, data = adult_child, Hess = TRUE)
+
+summary(harm_model_layer1)
+
+harm_model_layer2 <- polr(factor(children_health_harmed_tri, levels=c("Disagree", "Neutral", "Agree"), ordered = TRUE) ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse + overall_symps + any_child_overall, data = adult_child, Hess = TRUE)
+
+summary(harm_model_layer2)
+
+subdat <- data.frame("Outcome" = rep("Children in Flint are going to have health problems in future due to the water crisis.", 16), "Predictor" = c("Age", "Male", "Other Race", "White Race", "Receives public benefits", "Republican", "Other political party", "Years in Flint", "Number of confidants", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Number of adult symptoms", "Had child report at least one symptom"), "Effect" = c(summary(harm_model_layer1)$coefficients[1:14, 1], summary(harm_model_layer2)$coefficients[15:16, 1]), "SE" = c(summary(harm_model_layer1)$coefficients[1:14, 2], summary(harm_model_layer2)$coefficients[15:16, 2]))
+
+effects <- rbind(effects, subdat)
+
+poor_model_layer1 <- polr(factor(discriminatory_poor_tri, levels=c("Disagree", "Neutral", "Agree"), ordered = TRUE) ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse, data = adult_child, Hess = TRUE)
+
+summary(poor_model_layer1)
+
+poor_model_layer2 <- polr(factor(discriminatory_poor_tri, levels=c("Disagree", "Neutral", "Agree"), ordered = TRUE) ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse + overall_symps + any_child_overall, data = adult_child, Hess = TRUE)
+
+summary(poor_model_layer2)
+
+subdat <- data.frame("Outcome" = rep("The water source switch was discriminatory against lower income Flint residents.", 16), "Predictor" = c("Age", "Male", "Other Race", "White Race", "Receives public benefits", "Republican", "Other political party", "Years in Flint", "Number of confidants", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Number of adult symptoms", "Had child report at least one symptom"), "Effect" = c(summary(poor_model_layer1)$coefficients[1:14, 1], summary(poor_model_layer2)$coefficients[15:16, 1]), "SE" = c(summary(poor_model_layer1)$coefficients[1:14, 2], summary(poor_model_layer2)$coefficients[15:16, 2]))
+
+effects <- rbind(effects, subdat)
+
+race_model_layer1 <- polr(factor(racially_motivated_tri, levels=c("Disagree", "Neutral", "Agree"), ordered = TRUE) ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse, data = adult_child, Hess = TRUE)
+
+summary(race_model_layer1)
+
+race_model_layer2 <- polr(factor(racially_motivated_tri, levels=c("Disagree", "Neutral", "Agree"), ordered = TRUE) ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse + overall_symps + any_child_overall, data = adult_child, Hess = TRUE)
+
+summary(race_model_layer2)
+
+subdat <- data.frame("Outcome" = rep("The water source switch was racially motivated.", 16), "Predictor" = c("Age", "Male", "Other Race", "White Race", "Receives public benefits", "Republican", "Other political party", "Years in Flint", "Number of confidants", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Number of adult symptoms", "Had child report at least one symptom"), "Effect" = c(summary(race_model_layer1)$coefficients[1:14, 1], summary(race_model_layer2)$coefficients[15:16, 1]), "SE" = c(summary(race_model_layer1)$coefficients[1:14, 2], summary(race_model_layer2)$coefficients[15:16, 2]))
+
+effects <- rbind(effects, subdat)
+
+trust_model_layer1 <- polr(factor(trust_government_in_future_tri, levels=c("Disagree", "Neutral", "Agree"), ordered = TRUE) ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse, data = adult_child, Hess = TRUE)
+
+summary(trust_model_layer1)
+
+trust_model_layer2 <- polr(factor(trust_government_in_future_tri, levels=c("Disagree", "Neutral", "Agree"), ordered = TRUE) ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse + overall_symps + any_child_overall, data = adult_child, Hess = TRUE)
+
+summary(trust_model_layer2)
+
+subdat <- data.frame("Outcome" = rep("I am likely to trust the government on water/environmental issues in future.", 16), "Predictor" = c("Age", "Male", "Other Race", "White Race", "Receives public benefits", "Republican", "Other political party", "Years in Flint", "Number of confidants", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Number of adult symptoms", "Had child report at least one symptom"), "Effect" = c(summary(trust_model_layer1)$coefficients[1:14, 1], summary(trust_model_layer2)$coefficients[15:16, 1]), "SE" = c(summary(trust_model_layer1)$coefficients[1:14, 2], summary(trust_model_layer2)$coefficients[15:16, 2]))
+
+effects <- rbind(effects, subdat)
+
+drink_model_layer1 <- polr(factor(drink_tap_in_three_years_tri, levels=c("Disagree", "Neutral", "Agree"), ordered = TRUE) ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse, data = adult_child, Hess = TRUE)
+
+summary(drink_model_layer1)
+
+drink_model_layer2 <- polr(factor(drink_tap_in_three_years_tri, levels=c("Disagree", "Neutral", "Agree"), ordered = TRUE) ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse + overall_symps + any_child_overall, data = adult_child, Hess = TRUE)
+
+summary(drink_model_layer2)
+
+subdat <- data.frame("Outcome" = rep("Three years from now, I am likely to drink primarily tap water at home.", 16), "Predictor" = c("Age", "Male", "Other Race", "White Race", "Receives public benefits", "Republican", "Other political party", "Years in Flint", "Number of confidants", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Number of adult symptoms", "Had child report at least one symptom"), "Effect" = c(summary(drink_model_layer1)$coefficients[1:14, 1], summary(drink_model_layer2)$coefficients[15:16, 1]), "SE" = c(summary(drink_model_layer1)$coefficients[1:14, 2], summary(drink_model_layer2)$coefficients[15:16, 2]))
+
+effects <- rbind(effects, subdat)
+
+fedsatis_model_layer1 <- polr(factor(satisfied_federal_government_tri, levels=c("Disagree", "Neutral", "Agree"), ordered = TRUE) ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse, data = adult_child, Hess = TRUE)
+
+summary(fedsatis_model_layer1)
+
+fedsatis_model_layer2 <- polr(factor(satisfied_federal_government_tri, levels=c("Disagree", "Neutral", "Agree"), ordered = TRUE) ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse + overall_symps + any_child_overall, data = adult_child, Hess = TRUE)
+
+summary(fedsatis_model_layer2)
+
+subdat <- data.frame("Outcome" = rep("I am satisfied with the federal government's role in addressing the Flint water issues.", 16), "Predictor" = c("Age", "Male", "Other Race", "White Race", "Receives public benefits", "Republican", "Other political party", "Years in Flint", "Number of confidants", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Number of adult symptoms", "Had child report at least one symptom"), "Effect" = c(summary(fedsatis_model_layer1)$coefficients[1:14, 1], summary(fedsatis_model_layer2)$coefficients[15:16, 1]), "SE" = c(summary(fedsatis_model_layer1)$coefficients[1:14, 2], summary(fedsatis_model_layer2)$coefficients[15:16, 2]))
+
+effects <- rbind(effects, subdat)
+
+statesatis_model_layer1 <- polr(factor(satisfied_state_government_tri, levels=c("Disagree", "Neutral", "Agree"), ordered = TRUE) ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse, data = adult_child, Hess = TRUE)
+
+summary(statesatis_model_layer1)
+
+statesatis_model_layer2 <- polr(factor(satisfied_state_government_tri, levels=c("Disagree", "Neutral", "Agree"), ordered = TRUE) ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse + overall_symps + any_child_overall, data = adult_child, Hess = TRUE)
+
+summary(statesatis_model_layer2)
+
+subdat <- data.frame("Outcome" = rep("I am satisfied with the Michigan government's role in addressing the Flint water issues.", 16), "Predictor" = c("Age", "Male", "Other Race", "White Race", "Receives public benefits", "Republican", "Other political party", "Years in Flint", "Number of confidants", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Number of adult symptoms", "Had child report at least one symptom"), "Effect" = c(summary(statesatis_model_layer1)$coefficients[1:14, 1], summary(statesatis_model_layer2)$coefficients[15:16, 1]), "SE" = c(summary(statesatis_model_layer1)$coefficients[1:14, 2], summary(statesatis_model_layer2)$coefficients[15:16, 2]))
+
+effects <- rbind(effects, subdat)
+
+flintsatis_model_layer1 <- polr(factor(satisfied_flint_government_tri, levels=c("Disagree", "Neutral", "Agree"), ordered = TRUE) ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse, data = adult_child, Hess = TRUE)
+
+summary(flintsatis_model_layer1)
+
+flintsatis_model_layer2 <- polr(factor(satisfied_flint_government_tri, levels=c("Disagree", "Neutral", "Agree"), ordered = TRUE) ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse + overall_symps + any_child_overall, data = adult_child, Hess = TRUE)
+
+summary(flintsatis_model_layer2)
+
+subdat <- data.frame("Outcome" = rep("I am satisfied with the Flint government's role in addressing the Flint water issues.", 16), "Predictor" = c("Age", "Male", "Other Race", "White Race", "Receives public benefits", "Republican", "Other political party", "Years in Flint", "Number of confidants", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Number of adult symptoms", "Had child report at least one symptom"), "Effect" = c(summary(flintsatis_model_layer1)$coefficients[1:14, 1], summary(flintsatis_model_layer2)$coefficients[15:16, 1]), "SE" = c(summary(flintsatis_model_layer1)$coefficients[1:14, 2], summary(flintsatis_model_layer2)$coefficients[15:16, 2]))
+
+effects <- rbind(effects, subdat)
+
+adult_child$nightmares_fac <- case_when(
+  adult_child$nightmares=="Yes" ~ 1,
+  adult_child$nightmares=="No" ~ 0,
+  is.na(adult_child$nightmares)~ NA_real_
+)
+
+nightmares_model_layer1 <- glm(nightmares_fac ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse, data = adult_child)
+
+summary(nightmares_model_layer1)
+
+nightmares_model_layer2 <- glm(nightmares_fac ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse + overall_symps + any_child_overall, data = adult_child)
+
+summary(nightmares_model_layer2)
+
+subdat <- data.frame("Outcome" = rep("In the last month, I have had nightmares about the water crisis.", 16), "Predictor" = c("Age", "Male", "Other Race", "White Race", "Receives public benefits", "Republican", "Other political party", "Years in Flint", "Number of confidants", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Number of adult symptoms", "Had child report at least one symptom"), "Effect" = c(summary(nightmares_model_layer1)$coefficients[2:15, 1], summary(nightmares_model_layer2)$coefficients[16:17, 1]), "SE" = c(summary(nightmares_model_layer1)$coefficients[2:15, 2], summary(nightmares_model_layer2)$coefficients[16:17, 2]))
+
+effects <- rbind(effects, subdat)
+
+adult_child$avoided_fac <- case_when(
+  adult_child$avoided_thinking_crisis=="Yes" ~ 1,
+  adult_child$avoided_thinking_crisis=="No" ~ 0,
+  is.na(adult_child$avoided_thinking_crisis)~ NA_real_
+)
+
+avoid_model_layer1 <- glm(avoided_fac ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse, data = adult_child)
+
+summary(avoid_model_layer1)
+
+avoid_model_layer2 <- glm(avoided_fac ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse + overall_symps + any_child_overall, data = adult_child)
+
+summary(avoid_model_layer2)
+
+subdat <- data.frame("Outcome" = rep("In the last month, I have avoided thinking about the water crisis.", 16), "Predictor" = c("Age", "Male", "Other Race", "White Race", "Receives public benefits", "Republican", "Other political party", "Years in Flint", "Number of confidants", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Number of adult symptoms", "Had child report at least one symptom"), "Effect" = c(summary(avoid_model_layer1)$coefficients[2:15, 1], summary(avoid_model_layer2)$coefficients[16:17, 1]), "SE" = c(summary(avoid_model_layer1)$coefficients[2:15, 2], summary(avoid_model_layer2)$coefficients[16:17, 2]))
+
+effects <- rbind(effects, subdat)
+
+adult_child$onguard_fac <- case_when(
+  adult_child$onguard_watchful=="Yes" ~ 1,
+  adult_child$onguard_watchful=="No" ~ 0,
+  is.na(adult_child$onguard_watchful)~ NA_real_
+)
+
+onguard_model_layer1 <- glm(onguard_fac ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse, data = adult_child)
+
+summary(onguard_model_layer1)
+
+onguard_model_layer2 <- glm(onguard_fac ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse + overall_symps + any_child_overall, data = adult_child)
+
+summary(onguard_model_layer2)
+
+subdat <- data.frame("Outcome" = rep("In the last month, I have been constantly on guard.", 16), "Predictor" = c("Age", "Male", "Other Race", "White Race", "Receives public benefits", "Republican", "Other political party", "Years in Flint", "Number of confidants", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Number of adult symptoms", "Had child report at least one symptom"), "Effect" = c(summary(onguard_model_layer1)$coefficients[2:15, 1], summary(onguard_model_layer2)$coefficients[16:17, 1]), "SE" = c(summary(onguard_model_layer1)$coefficients[2:15, 2], summary(onguard_model_layer2)$coefficients[16:17, 2]))
+
+effects <- rbind(effects, subdat)
+
+adult_child$numb_fac <- case_when(
+  adult_child$numb_detached=="Yes" ~ 1,
+  adult_child$numb_detached=="No" ~ 0,
+  is.na(adult_child$numb_detached)~ NA_real_
+)
+
+numb_model_layer1 <- glm(numb_fac ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse, data = adult_child)
+
+summary(numb_model_layer1)
+
+numb_model_layer2 <- glm(numb_fac ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse + overall_symps + any_child_overall, data = adult_child)
+
+summary(numb_model_layer2)
+
+subdat <- data.frame("Outcome" = rep("In the last month, I have felt numb/detached from my surroundings.", 16), "Predictor" = c("Age", "Male", "Other Race", "White Race", "Receives public benefits", "Republican", "Other political party", "Years in Flint", "Number of confidants", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Number of adult symptoms", "Had child report at least one symptom"), "Effect" = c(summary(numb_model_layer1)$coefficients[2:15, 1], summary(numb_model_layer2)$coefficients[16:17, 1]), "SE" = c(summary(numb_model_layer1)$coefficients[2:15, 2], summary(numb_model_layer2)$coefficients[16:17, 2]))
+
+effects <- rbind(effects, subdat)
+
+adult_child$guilt_fac <- case_when(
+  adult_child$felt_guilty=="Yes" ~ 1,
+  adult_child$felt_guilty=="No" ~ 0,
+  is.na(adult_child$felt_guilty)~ NA_real_
+)
+
+guilt_model_layer1 <- glm(guilt_fac ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse, data = adult_child)
+
+summary(guilt_model_layer1)
+
+guilt_model_layer2 <- glm(guilt_fac ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse + overall_symps + any_child_overall, data = adult_child)
+
+summary(guilt_model_layer2)
+
+subdat <- data.frame("Outcome" = rep("In the last month, I have felt guilty about the water crisis.", 16), "Predictor" = c("Age", "Male", "Other Race", "White Race", "Receives public benefits", "Republican", "Other political party", "Years in Flint", "Number of confidants", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Number of adult symptoms", "Had child report at least one symptom"), "Effect" = c(summary(guilt_model_layer1)$coefficients[2:15, 1], summary(guilt_model_layer2)$coefficients[16:17, 1]), "SE" = c(summary(guilt_model_layer1)$coefficients[2:15, 2], summary(guilt_model_layer2)$coefficients[16:17, 2]))
+
+effects <- rbind(effects, subdat)
+
+nervous_model_layer1 <- polr(factor(days_nervous_2weeks, levels=c("Not at all", "Several days", "More than half the days", "Nearly every day"), ordered = TRUE) ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse, data = adult_child, Hess = TRUE)
+
+summary(nervous_model_layer1)
+
+nervous_model_layer2 <- polr(factor(days_nervous_2weeks, levels=c("Not at all", "Several days", "More than half the days", "Nearly every day"), ordered = TRUE) ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse + overall_symps + any_child_overall, data = adult_child, Hess = TRUE)
+
+summary(nervous_model_layer2)
+
+subdat <- data.frame("Outcome" = rep("In the last two weeks, how many days have you felt nervous?", 16), "Predictor" = c("Age", "Male", "Other Race", "White Race", "Receives public benefits", "Republican", "Other political party", "Years in Flint", "Number of confidants", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Number of adult symptoms", "Had child report at least one symptom"), "Effect" = c(summary(nervous_model_layer1)$coefficients[1:14, 1], summary(nervous_model_layer2)$coefficients[15:16, 1]), "SE" = c(summary(nervous_model_layer1)$coefficients[1:14, 2], summary(nervous_model_layer2)$coefficients[15:16, 2]))
+
+effects <- rbind(effects, subdat)
+
+worry_model_layer1 <- polr(factor(days_worrying_2weeks, levels=c("Not at all", "Several days", "More than half the days", "Nearly every day"), ordered = TRUE) ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse, data = adult_child, Hess = TRUE)
+
+summary(worry_model_layer1)
+
+worry_model_layer2 <- polr(factor(days_worrying_2weeks, levels=c("Not at all", "Several days", "More than half the days", "Nearly every day"), ordered = TRUE) ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse + overall_symps + any_child_overall, data = adult_child, Hess = TRUE)
+
+summary(worry_model_layer2)
+
+subdat <- data.frame("Outcome" = rep("In the last two weeks, how many days have you worried uncontrollably?", 16), "Predictor" = c("Age", "Male", "Other Race", "White Race", "Receives public benefits", "Republican", "Other political party", "Years in Flint", "Number of confidants", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Number of adult symptoms", "Had child report at least one symptom"), "Effect" = c(summary(worry_model_layer1)$coefficients[1:14, 1], summary(worry_model_layer2)$coefficients[15:16, 1]), "SE" = c(summary(worry_model_layer1)$coefficients[1:14, 2], summary(worry_model_layer2)$coefficients[15:16, 2]))
+
+effects <- rbind(effects, subdat)
+
+pleasure_model_layer1 <- polr(factor(days_nopleasure_2weeks, levels=c("Not at all", "Several days", "More than half the days", "Nearly every day"), ordered = TRUE) ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse, data = adult_child, Hess = TRUE)
+
+summary(pleasure_model_layer1)
+
+pleasure_model_layer2 <- polr(factor(days_nopleasure_2weeks, levels=c("Not at all", "Several days", "More than half the days", "Nearly every day"), ordered = TRUE) ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse + overall_symps + any_child_overall, data = adult_child, Hess = TRUE)
+
+summary(pleasure_model_layer2)
+
+subdat <- data.frame("Outcome" = rep("In the last two weeks, how many days have you felt little interest/pleasure in doing things?", 16), "Predictor" = c("Age", "Male", "Other Race", "White Race", "Receives public benefits", "Republican", "Other political party", "Years in Flint", "Number of confidants", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Number of adult symptoms", "Had child report at least one symptom"), "Effect" = c(summary(pleasure_model_layer1)$coefficients[1:14, 1], summary(pleasure_model_layer2)$coefficients[15:16, 1]), "SE" = c(summary(pleasure_model_layer1)$coefficients[1:14, 2], summary(pleasure_model_layer2)$coefficients[15:16, 2]))
+
+effects <- rbind(effects, subdat)
+
+depress_model_layer1 <- polr(factor(days_depressed_2weeks, levels=c("Not at all", "Several days", "More than half the days", "Nearly every day"), ordered = TRUE) ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse, data = adult_child, Hess = TRUE)
+
+summary(depress_model_layer1)
+
+depress_model_layer2 <- polr(factor(days_depressed_2weeks, levels=c("Not at all", "Several days", "More than half the days", "Nearly every day"), ordered = TRUE) ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse + overall_symps + any_child_overall, data = adult_child, Hess = TRUE)
+
+summary(depress_model_layer2)
+
+subdat <- data.frame("Outcome" = rep("In the last two weeks, how many days have you felt depressed?", 16), "Predictor" = c("Age", "Male", "Other Race", "White Race", "Receives public benefits", "Republican", "Other political party", "Years in Flint", "Number of confidants", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Number of adult symptoms", "Had child report at least one symptom"), "Effect" = c(summary(depress_model_layer1)$coefficients[1:14, 1], summary(depress_model_layer2)$coefficients[15:16, 1]), "SE" = c(summary(depress_model_layer1)$coefficients[1:14, 2], summary(depress_model_layer2)$coefficients[15:16, 2]))
+
+effects <- rbind(effects, subdat)
+
+ptsd_model_layer1 <- lm(ptsdscore ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse, data = adult_child)
+
+summary(ptsd_model_layer1)
+
+ptsd_model_layer2 <- lm(ptsdscore ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse + overall_symps + any_child_overall, data = adult_child)
+
+summary(ptsd_model_layer2)
+
+subdat <- data.frame("Outcome" = rep("PTSD-5 Score", 16), "Predictor" = c("Age", "Male", "Other Race", "White Race", "Receives public benefits", "Republican", "Other political party", "Years in Flint", "Number of confidants", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Number of adult symptoms", "Had child report at least one symptom"), "Effect" = c(summary(ptsd_model_layer1)$coefficients[2:15, 1], summary(ptsd_model_layer2)$coefficients[16:17, 1]), "SE" = c(summary(ptsd_model_layer1)$coefficients[2:15, 2], summary(ptsd_model_layer2)$coefficients[16:17, 2]))
+
+effects <- rbind(effects, subdat)
+
+phq_model_layer1 <- lm(phq ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse, data = adult_child)
+
+summary(phq_model_layer1)
+
+phq_model_layer2 <- lm(phq ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse + overall_symps + any_child_overall, data = adult_child)
+
+summary(phq_model_layer2)
+
+subdat <- data.frame("Outcome" = rep("PHQ-4 Score", 16), "Predictor" = c("Age", "Male", "Other Race", "White Race", "Receives public benefits", "Republican", "Other political party", "Years in Flint", "Number of confidants", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Number of adult symptoms", "Had child report at least one symptom"), "Effect" = c(summary(phq_model_layer1)$coefficients[2:15, 1], summary(phq_model_layer2)$coefficients[16:17, 1]), "SE" = c(summary(phq_model_layer1)$coefficients[2:15, 2], summary(phq_model_layer2)$coefficients[16:17, 2]))
+
+effects <- rbind(effects, subdat)
+```
+
+Now tidying up all of these effect estimates:
+```{r, include=FALSE, echo=TRUE}
+effects <- effects[-1,]
+effects$Lower_raw <- effects$Effect - 1.96*effects$SE
+effects$Upper_raw <- effects$Effect + 1.96*effects$SE
+effects$tstat <- effects$Effect/effects$SE
+effects$pvalue <- 2*pnorm(abs(effects$tstat), lower.tail = FALSE)
+
+effects$Lower[effects$Outcome=="PHQ-4 Score" | effects$Outcome=="PTSD-5 Score"] <- effects$Lower_raw[effects$Outcome=="PHQ-4 Score" | effects$Outcome=="PTSD-5 Score"]
+effects$Upper[effects$Outcome=="PHQ-4 Score" | effects$Outcome=="PTSD-5 Score"] <- effects$Upper_raw[effects$Outcome=="PHQ-4 Score" | effects$Outcome=="PTSD-5 Score"]
+effects$Estimate[effects$Outcome=="PHQ-4 Score" | effects$Outcome=="PTSD-5 Score"] <- effects$Effect[effects$Outcome=="PHQ-4 Score" | effects$Outcome=="PTSD-5 Score"]
+
+effects$Lower[effects$Outcome!="PHQ-4 Score" & effects$Outcome!="PTSD-5 Score"] <- exp(effects$Lower_raw[effects$Outcome!="PHQ-4 Score" & effects$Outcome!="PTSD-5 Score"])
+effects$Upper[effects$Outcome!="PHQ-4 Score" & effects$Outcome!="PTSD-5 Score"] <- exp(effects$Upper_raw[effects$Outcome!="PHQ-4 Score" & effects$Outcome!="PTSD-5 Score"])
+effects$Estimate[effects$Outcome!="PHQ-4 Score" & effects$Outcome!="PTSD-5 Score"] <- exp(effects$Effect[effects$Outcome!="PHQ-4 Score" & effects$Outcome!="PTSD-5 Score"])
+
+effects$BHpvalue <- p.adjust(effects$pvalue, method="BH")
+
+effects$label <- paste0(round(effects$Estimate, digits = 1), ", (", round(effects$Lower, digits = 1), ", ", round(effects$Upper, digits = 1), ")")
+
+prettyeffects <- select(effects, Predictor, Outcome, label, BHpvalue)
+
+sigeffects <- prettyeffects[prettyeffects$BHpvalue < 0.05,]
+```
