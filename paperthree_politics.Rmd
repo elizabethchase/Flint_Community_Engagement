@@ -273,7 +273,11 @@ intent_model_layer2 <- polr(factor(intent_harm_tri, levels=c("Disagree", "Neutra
 
 summary(intent_model_layer2)
 
-subdat <- data.frame("Outcome" = rep("The water source switch was intended to harm Flint residents.", 16), "Predictor" = c("Age", "Male", "Other Race", "White Race", "Receives public benefits", "Republican", "Other political party", "Years in Flint", "Number of confidants", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Number of adult symptoms", "Had child report at least one symptom"), "Effect" = c(summary(intent_model_layer1)$coefficients[1:14, 1], summary(intent_model_layer2)$coefficients[15:16, 1]), "SE" = c(summary(intent_model_layer1)$coefficients[1:14, 2], summary(intent_model_layer2)$coefficients[15:16, 2]))
+intent_model_layer3 <- polr(factor(intent_harm_tri, levels=c("Disagree", "Neutral", "Agree"), ordered = TRUE) ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse + overall_symps + any_child_overall + ptsdscore + phq, data = adult_child, Hess = TRUE)
+
+summary(intent_model_layer3)
+
+subdat <- data.frame("Outcome" = rep("The water source switch was intended to harm Flint residents.", 18), "Predictor" = c("Age", "Male", "Other Race", "White Race", "Receives public benefits", "Republican", "Other political party", "Years in Flint", "Number of confidants", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Number of adult symptoms", "Had child report at least one symptom", "PTSD score", "PHQ score"), "Effect" = c(summary(intent_model_layer1)$coefficients[1:14, 1], summary(intent_model_layer2)$coefficients[15:16, 1], summary(intent_model_layer3)$coefficients[17:18,1]), "SE" = c(summary(intent_model_layer1)$coefficients[1:14, 2], summary(intent_model_layer2)$coefficients[15:16, 2], summary(intent_model_layer3)$coefficients[17:18, 2]))
 
 effects <- rbind(effects, subdat)
 
@@ -285,8 +289,11 @@ exag_model_layer2 <- polr(factor(water_exaggerated_tri, levels=c("Disagree", "Ne
 
 summary(exag_model_layer2)
 
-subdat <- data.frame("Outcome" = rep("People have made the water issues a bigger deal than reality.", 16), "Predictor" = c("Age", "Male", "Other Race", "White Race", "Receives public benefits", "Republican", "Other political party", "Years in Flint", "Number of confidants", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Number of adult symptoms", "Had child report at least one symptom"), "Effect" = c(summary(exag_model_layer1)$coefficients[1:14, 1], summary(exag_model_layer2)$coefficients[15:16, 1]), "SE" = c(summary(exag_model_layer1)$coefficients[1:14, 2], summary(exag_model_layer2)$coefficients[15:16, 2]))
+exag_model_layer3 <- polr(factor(water_exaggerated_tri, levels=c("Disagree", "Neutral", "Agree"), ordered = TRUE) ~ age + gendercollapse + collapserace + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse + overall_symps + any_child_overall + ptsdscore + phq, data = adult_child, Hess = TRUE)
 
+summary(exag_model_layer3)
+
+subdat <- data.frame("Outcome" = rep("People have made the water issues a bigger deal than reality.", 18), "Predictor" = c("Age", "Male", "Other Race", "White Race", "Receives public benefits", "Republican", "Other political party", "Years in Flint", "Number of confidants", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Number of adult symptoms", "Had child report at least one symptom", "PTSD score", "PHQ score"), "Effect" = c(summary(exag_model_layer1)$coefficients[1:14, 1], summary(exag_model_layer2)$coefficients[15:16, 1], summary(exag_model_layer3)$coefficients[17:18, 1]), "SE" = c(summary(exag_model_layer1)$coefficients[1:14, 2], summary(exag_model_layer2)$coefficients[15:16, 2], summary(exag_model_layer3)$coefficients[17:18, 2]))
 
 effects <- rbind(effects, subdat)
 
@@ -298,7 +305,11 @@ harm_model_layer2 <- polr(factor(children_health_harmed_tri, levels=c("Disagree"
 
 summary(harm_model_layer2)
 
-subdat <- data.frame("Outcome" = rep("Children in Flint are going to have health problems in future due to the water crisis.", 16), "Predictor" = c("Age", "Male", "Other Race", "White Race", "Receives public benefits", "Republican", "Other political party", "Years in Flint", "Number of confidants", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Number of adult symptoms", "Had child report at least one symptom"), "Effect" = c(summary(harm_model_layer1)$coefficients[1:14, 1], summary(harm_model_layer2)$coefficients[15:16, 1]), "SE" = c(summary(harm_model_layer1)$coefficients[1:14, 2], summary(harm_model_layer2)$coefficients[15:16, 2]))
+harm_model_layer3 <- polr(factor(children_health_harmed_tri, levels=c("Disagree", "Neutral", "Agree"), ordered = TRUE) ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse + overall_symps + any_child_overall + ptsdscore + phq, data = adult_child, Hess = TRUE)
+
+summary(harm_model_layer3)
+
+subdat <- data.frame("Outcome" = rep("Children in Flint are going to have health problems in future due to the water crisis.", 18), "Predictor" = c("Age", "Male", "Other Race", "White Race", "Receives public benefits", "Republican", "Other political party", "Years in Flint", "Number of confidants", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Number of adult symptoms", "Had child report at least one symptom", "PTSD score", "PHQ score"), "Effect" = c(summary(harm_model_layer1)$coefficients[1:14, 1], summary(harm_model_layer2)$coefficients[15:16, 1], summary(harm_model_layer3)$coefficients[17:18, 1]), "SE" = c(summary(harm_model_layer1)$coefficients[1:14, 2], summary(harm_model_layer2)$coefficients[15:16, 2], summary(harm_model_layer3)$coefficients[17:18, 2]))
 
 effects <- rbind(effects, subdat)
 
@@ -310,7 +321,11 @@ poor_model_layer2 <- polr(factor(discriminatory_poor_tri, levels=c("Disagree", "
 
 summary(poor_model_layer2)
 
-subdat <- data.frame("Outcome" = rep("The water source switch was discriminatory against lower income Flint residents.", 16), "Predictor" = c("Age", "Male", "Other Race", "White Race", "Receives public benefits", "Republican", "Other political party", "Years in Flint", "Number of confidants", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Number of adult symptoms", "Had child report at least one symptom"), "Effect" = c(summary(poor_model_layer1)$coefficients[1:14, 1], summary(poor_model_layer2)$coefficients[15:16, 1]), "SE" = c(summary(poor_model_layer1)$coefficients[1:14, 2], summary(poor_model_layer2)$coefficients[15:16, 2]))
+poor_model_layer3 <- polr(factor(discriminatory_poor_tri, levels=c("Disagree", "Neutral", "Agree"), ordered = TRUE) ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse + overall_symps + any_child_overall + ptsdscore + phq, data = adult_child, Hess = TRUE)
+
+summary(poor_model_layer3)
+
+subdat <- data.frame("Outcome" = rep("The water source switch was discriminatory against lower income Flint residents.", 18), "Predictor" = c("Age", "Male", "Other Race", "White Race", "Receives public benefits", "Republican", "Other political party", "Years in Flint", "Number of confidants", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Number of adult symptoms", "Had child report at least one symptom", "PTSD score", "PHQ score"), "Effect" = c(summary(poor_model_layer1)$coefficients[1:14, 1], summary(poor_model_layer2)$coefficients[15:16, 1], summary(poor_model_layer3)$coefficients[17:18, 1]), "SE" = c(summary(poor_model_layer1)$coefficients[1:14, 2], summary(poor_model_layer2)$coefficients[15:16, 2], summary(poor_model_layer3)$coefficients[17:18, 2]))
 
 effects <- rbind(effects, subdat)
 
@@ -322,7 +337,11 @@ race_model_layer2 <- polr(factor(racially_motivated_tri, levels=c("Disagree", "N
 
 summary(race_model_layer2)
 
-subdat <- data.frame("Outcome" = rep("The water source switch was racially motivated.", 16), "Predictor" = c("Age", "Male", "Other Race", "White Race", "Receives public benefits", "Republican", "Other political party", "Years in Flint", "Number of confidants", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Number of adult symptoms", "Had child report at least one symptom"), "Effect" = c(summary(race_model_layer1)$coefficients[1:14, 1], summary(race_model_layer2)$coefficients[15:16, 1]), "SE" = c(summary(race_model_layer1)$coefficients[1:14, 2], summary(race_model_layer2)$coefficients[15:16, 2]))
+race_model_layer3 <- polr(factor(racially_motivated_tri, levels=c("Disagree", "Neutral", "Agree"), ordered = TRUE) ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse + overall_symps + any_child_overall + ptsdscore + phq, data = adult_child, Hess = TRUE)
+
+summary(race_model_layer3)
+
+subdat <- data.frame("Outcome" = rep("The water source switch was racially motivated.", 18), "Predictor" = c("Age", "Male", "Other Race", "White Race", "Receives public benefits", "Republican", "Other political party", "Years in Flint", "Number of confidants", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Number of adult symptoms", "Had child report at least one symptom", "PTSD score", "PHQ score"), "Effect" = c(summary(race_model_layer1)$coefficients[1:14, 1], summary(race_model_layer2)$coefficients[15:16, 1], summary(race_model_layer3)$coefficients[17:18, 1]), "SE" = c(summary(race_model_layer1)$coefficients[1:14, 2], summary(race_model_layer2)$coefficients[15:16, 2], summary(race_model_layer3)$coefficients[17:18, 2]))
 
 effects <- rbind(effects, subdat)
 
@@ -334,7 +353,11 @@ trust_model_layer2 <- polr(factor(trust_government_in_future_tri, levels=c("Disa
 
 summary(trust_model_layer2)
 
-subdat <- data.frame("Outcome" = rep("I am likely to trust the government on water/environmental issues in future.", 16), "Predictor" = c("Age", "Male", "Other Race", "White Race", "Receives public benefits", "Republican", "Other political party", "Years in Flint", "Number of confidants", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Number of adult symptoms", "Had child report at least one symptom"), "Effect" = c(summary(trust_model_layer1)$coefficients[1:14, 1], summary(trust_model_layer2)$coefficients[15:16, 1]), "SE" = c(summary(trust_model_layer1)$coefficients[1:14, 2], summary(trust_model_layer2)$coefficients[15:16, 2]))
+trust_model_layer3 <- polr(factor(trust_government_in_future_tri, levels=c("Disagree", "Neutral", "Agree"), ordered = TRUE) ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse + overall_symps + any_child_overall + ptsdscore + phq, data = adult_child, Hess = TRUE)
+
+summary(trust_model_layer3)
+
+subdat <- data.frame("Outcome" = rep("I am likely to trust the government on water/environmental issues in future.", 18), "Predictor" = c("Age", "Male", "Other Race", "White Race", "Receives public benefits", "Republican", "Other political party", "Years in Flint", "Number of confidants", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Number of adult symptoms", "Had child report at least one symptom", "PTSD score", "PHQ score"), "Effect" = c(summary(trust_model_layer1)$coefficients[1:14, 1], summary(trust_model_layer2)$coefficients[15:16, 1], summary(trust_model_layer3)$coefficients[17:18, 1]), "SE" = c(summary(trust_model_layer1)$coefficients[1:14, 2], summary(trust_model_layer2)$coefficients[15:16, 2], summary(trust_model_layer3)$coefficients[17:18, 2]))
 
 effects <- rbind(effects, subdat)
 
@@ -346,7 +369,11 @@ drink_model_layer2 <- polr(factor(drink_tap_in_three_years_tri, levels=c("Disagr
 
 summary(drink_model_layer2)
 
-subdat <- data.frame("Outcome" = rep("Three years from now, I am likely to drink primarily tap water at home.", 16), "Predictor" = c("Age", "Male", "Other Race", "White Race", "Receives public benefits", "Republican", "Other political party", "Years in Flint", "Number of confidants", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Number of adult symptoms", "Had child report at least one symptom"), "Effect" = c(summary(drink_model_layer1)$coefficients[1:14, 1], summary(drink_model_layer2)$coefficients[15:16, 1]), "SE" = c(summary(drink_model_layer1)$coefficients[1:14, 2], summary(drink_model_layer2)$coefficients[15:16, 2]))
+drink_model_layer3 <- polr(factor(drink_tap_in_three_years_tri, levels=c("Disagree", "Neutral", "Agree"), ordered = TRUE) ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse + overall_symps + any_child_overall + ptsdscore + phq, data = adult_child, Hess = TRUE)
+
+summary(drink_model_layer3)
+
+subdat <- data.frame("Outcome" = rep("Three years from now, I am likely to drink primarily tap water at home.", 18), "Predictor" = c("Age", "Male", "Other Race", "White Race", "Receives public benefits", "Republican", "Other political party", "Years in Flint", "Number of confidants", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Number of adult symptoms", "Had child report at least one symptom", "PTSD score", "PHQ score"), "Effect" = c(summary(drink_model_layer1)$coefficients[1:14, 1], summary(drink_model_layer2)$coefficients[15:16, 1], summary(drink_model_layer3)$coefficients[17:18, 1]), "SE" = c(summary(drink_model_layer1)$coefficients[1:14, 2], summary(drink_model_layer2)$coefficients[15:16, 2], summary(drink_model_layer3)$coefficients[17:18, 2]))
 
 effects <- rbind(effects, subdat)
 
@@ -358,7 +385,11 @@ fedsatis_model_layer2 <- polr(factor(satisfied_federal_government_tri, levels=c(
 
 summary(fedsatis_model_layer2)
 
-subdat <- data.frame("Outcome" = rep("I am satisfied with the federal government's role in addressing the Flint water issues.", 16), "Predictor" = c("Age", "Male", "Other Race", "White Race", "Receives public benefits", "Republican", "Other political party", "Years in Flint", "Number of confidants", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Number of adult symptoms", "Had child report at least one symptom"), "Effect" = c(summary(fedsatis_model_layer1)$coefficients[1:14, 1], summary(fedsatis_model_layer2)$coefficients[15:16, 1]), "SE" = c(summary(fedsatis_model_layer1)$coefficients[1:14, 2], summary(fedsatis_model_layer2)$coefficients[15:16, 2]))
+fedsatis_model_layer3 <- polr(factor(satisfied_federal_government_tri, levels=c("Disagree", "Neutral", "Agree"), ordered = TRUE) ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse + overall_symps + any_child_overall + ptsdscore + phq, data = adult_child, Hess = TRUE)
+
+summary(fedsatis_model_layer3)
+
+subdat <- data.frame("Outcome" = rep("I am satisfied with the federal government's role in addressing the Flint water issues.", 18), "Predictor" = c("Age", "Male", "Other Race", "White Race", "Receives public benefits", "Republican", "Other political party", "Years in Flint", "Number of confidants", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Number of adult symptoms", "Had child report at least one symptom", "PTSD score", "PHQ score"), "Effect" = c(summary(fedsatis_model_layer1)$coefficients[1:14, 1], summary(fedsatis_model_layer2)$coefficients[15:16, 1], summary(fedsatis_model_layer3)$coefficients[17:18, 1]), "SE" = c(summary(fedsatis_model_layer1)$coefficients[1:14, 2], summary(fedsatis_model_layer2)$coefficients[15:16, 2], summary(fedsatis_model_layer3)$coefficients[17:18, 2]))
 
 effects <- rbind(effects, subdat)
 
@@ -370,7 +401,11 @@ statesatis_model_layer2 <- polr(factor(satisfied_state_government_tri, levels=c(
 
 summary(statesatis_model_layer2)
 
-subdat <- data.frame("Outcome" = rep("I am satisfied with the Michigan government's role in addressing the Flint water issues.", 16), "Predictor" = c("Age", "Male", "Other Race", "White Race", "Receives public benefits", "Republican", "Other political party", "Years in Flint", "Number of confidants", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Number of adult symptoms", "Had child report at least one symptom"), "Effect" = c(summary(statesatis_model_layer1)$coefficients[1:14, 1], summary(statesatis_model_layer2)$coefficients[15:16, 1]), "SE" = c(summary(statesatis_model_layer1)$coefficients[1:14, 2], summary(statesatis_model_layer2)$coefficients[15:16, 2]))
+statesatis_model_layer3 <- polr(factor(satisfied_state_government_tri, levels=c("Disagree", "Neutral", "Agree"), ordered = TRUE) ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse + overall_symps + any_child_overall + ptsdscore + phq, data = adult_child, Hess = TRUE)
+
+summary(statesatis_model_layer3)
+
+subdat <- data.frame("Outcome" = rep("I am satisfied with the Michigan government's role in addressing the Flint water issues.", 18), "Predictor" = c("Age", "Male", "Other Race", "White Race", "Receives public benefits", "Republican", "Other political party", "Years in Flint", "Number of confidants", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Number of adult symptoms", "Had child report at least one symptom", "PTSD score", "PHQ score"), "Effect" = c(summary(statesatis_model_layer1)$coefficients[1:14, 1], summary(statesatis_model_layer2)$coefficients[15:16, 1], summary(statesatis_model_layer3)$coefficients[17:18, 1]), "SE" = c(summary(statesatis_model_layer1)$coefficients[1:14, 2], summary(statesatis_model_layer2)$coefficients[15:16, 2], summary(statesatis_model_layer3)$coefficients[17:18, 2]))
 
 effects <- rbind(effects, subdat)
 
@@ -382,7 +417,11 @@ flintsatis_model_layer2 <- polr(factor(satisfied_flint_government_tri, levels=c(
 
 summary(flintsatis_model_layer2)
 
-subdat <- data.frame("Outcome" = rep("I am satisfied with the Flint government's role in addressing the Flint water issues.", 16), "Predictor" = c("Age", "Male", "Other Race", "White Race", "Receives public benefits", "Republican", "Other political party", "Years in Flint", "Number of confidants", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Number of adult symptoms", "Had child report at least one symptom"), "Effect" = c(summary(flintsatis_model_layer1)$coefficients[1:14, 1], summary(flintsatis_model_layer2)$coefficients[15:16, 1]), "SE" = c(summary(flintsatis_model_layer1)$coefficients[1:14, 2], summary(flintsatis_model_layer2)$coefficients[15:16, 2]))
+flintsatis_model_layer3 <- polr(factor(satisfied_flint_government_tri, levels=c("Disagree", "Neutral", "Agree"), ordered = TRUE) ~ age + gendercollapse + collapserace + pubbencollapse + partycollapse + years_cityflint + confidants2 + zipcollapse + overall_symps + any_child_overall + ptsdscore + phq, data = adult_child, Hess = TRUE)
+
+summary(flintsatis_model_layer3)
+
+subdat <- data.frame("Outcome" = rep("I am satisfied with the Flint government's role in addressing the Flint water issues.", 18), "Predictor" = c("Age", "Male", "Other Race", "White Race", "Receives public benefits", "Republican", "Other political party", "Years in Flint", "Number of confidants", "Zipcode 48504", "Zipcode 48505", "Zipcode 48506", "Zipcode 48507", "Zipcode 48532", "Number of adult symptoms", "Had child report at least one symptom", "PTSD score", "PHQ score"), "Effect" = c(summary(flintsatis_model_layer1)$coefficients[1:14, 1], summary(flintsatis_model_layer2)$coefficients[15:16, 1], summary(flintsatis_model_layer3)$coefficients[17:18, 1]), "SE" = c(summary(flintsatis_model_layer1)$coefficients[1:14, 2], summary(flintsatis_model_layer2)$coefficients[15:16, 2], summary(flintsatis_model_layer3)$coefficients[17:18, 2]))
 
 effects <- rbind(effects, subdat)
 
@@ -570,6 +609,6 @@ effects$BHpvalue <- p.adjust(effects$pvalue, method="BH")
 effects$label <- paste0(round(effects$Estimate, digits = 1), ", (", round(effects$Lower, digits = 1), ", ", round(effects$Upper, digits = 1), ")")
 
 prettyeffects <- select(effects, Predictor, Outcome, label, BHpvalue)
-
+prettyeffects$BHpvalue <- round(prettyeffects$BHpvalue, digits = 2)
 sigeffects <- prettyeffects[prettyeffects$BHpvalue < 0.05,]
 ```
