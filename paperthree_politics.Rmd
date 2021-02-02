@@ -159,6 +159,9 @@ adult_child$satisfied_federal_government_tri <- case_when(
 
 adult_child$gendercollapse <- ifelse(adult_child$gender=="Transgender Woman" | adult_child$gender=="Female", "Female", ifelse(is.na(adult_child$gender), NA_character_, "Male"))
 
+adult_child$ptsd_bin <- as.numeric(adult_child$ptsdscore >= 3)
+adult_child$phq_bin <- as.numeric(adult_child$phq >= 6)
+
 rm(list=c("adult_clean_eliz", "subadult", "child_final", "symp_collapse", "symp_sub", "symp_sub2"))
 ```
 
