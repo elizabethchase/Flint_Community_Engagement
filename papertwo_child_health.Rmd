@@ -1,11 +1,11 @@
 ---
 title: "Manuscript 2: Child Health Outcomes"
 author: "Elizabeth Chase"
-date: "10/16/2020"
+date: "5/10/2021"
 output: pdf_document
 ---
 
-```{r setup, include=FALSE, echo=TRUE}
+```{r setup, include=FALSE, echo=FALSE}
 library(knitr)
 opts_chunk$set(collapse=TRUE, fig.align='center', out.extra = '', fig.pos= "h", tidy=TRUE, tidy.opts=list(blank=TRUE, width.cutoff=40), warning=FALSE,message=FALSE)
 options(scipen=999)
@@ -19,9 +19,6 @@ library(tableone)
 library(latex2exp)
 library(labelled)
 library(kableExtra)
-library(tigris)
-library(sf)
-library(spdep)
 library(logistf)
 library(ARTool)
 library(lme4)
@@ -29,26 +26,81 @@ library(lme4)
 load("~/Desktop/Research/Jerel Flint/Analyses/child_long.RData")
 load("~/Desktop/Research/Jerel Flint/Analyses/adult_data_eliz.RData")
 
-subadult <- mutate(adult_clean_eliz, parbloodtestf = blood_test_after_april_2014, parbllf = elevated_lead_after_april_2014, parrashesf = rashes_after_april_2014, parhairf = hairloss_after_april_2014, parnausf = nausea_after_april_2014, parirrf = irritable_after_april_2014, parbloodtestc = getscreened, parbllc = elevated_collapse, parrashesc = rash_collapse, parhairc = hair_collapse, parnausc = nausea_collapse, parirrc = irritable_collapse, paroverall = overall_collapse) %>% select(inclusion, unique_id, age, gender, collapserace, collapseeduc, have_health_insurance, public_benefits, water_exaggerated, children_health_harmed, trust_government_in_future, drink_tap_in_three_years, satisfied_flint_government, satisfied_state_government, satisfied_federal_government, political_affiliation, nightmares, avoided_thinking_crisis, onguard_watchful, numb_detached, felt_guilty, ptsdscore, phq, parbloodtestf, parbllf, parrashesf, parhairf, parnausf, parirrf, parbloodtestc, parbllc, parrashesc, parhairc, parnausc, parirrc, paroverall, confidants2, number_children, employ_status)
+adult_clean_eliz$num_time_notice <- case_when(
+  adult_clean_eliz$noticed_water_issue=="1 year *AFTER* it was switched" ~ 12,
+  adult_clean_eliz$noticed_water_issue=="2 months *AFTER* it was switched" ~ 2,
+  adult_clean_eliz$noticed_water_issue=="Unsure/Don't know" ~ NA_real_,
+  adult_clean_eliz$noticed_water_issue=="2 years *AFTER* it was switched" ~ 24,
+  adult_clean_eliz$noticed_water_issue=="Less than 1 month *AFTER* the water source was switched" ~ 0.5,
+  adult_clean_eliz$noticed_water_issue=="1 month *AFTER* it was switched" ~ 1,
+  adult_clean_eliz$noticed_water_issue=="3 months *AFTER* it was switched" ~ 3,
+  adult_clean_eliz$noticed_water_issue=="1 year and 2 months *AFTER* it was switched" ~ 14,
+  adult_clean_eliz$noticed_water_issue=="6 months *AFTER* it was switched" ~ 6,
+  adult_clean_eliz$noticed_water_issue=="9 months *AFTER* it was switched" ~ 9,
+  adult_clean_eliz$noticed_water_issue=="1 year and 6 months *AFTER* it was switched" ~ 18,
+  adult_clean_eliz$noticed_water_issue=="7 months *AFTER* it was switched" ~ 7,
+  adult_clean_eliz$noticed_water_issue=="4 years or more *AFTER* it was switched" ~ 4,
+  adult_clean_eliz$noticed_water_issue=="10 months *AFTER* it was switched" ~ 10,
+  adult_clean_eliz$noticed_water_issue=="5 months *AFTER* it was switched" ~ 5,
+  adult_clean_eliz$noticed_water_issue=="11 months *AFTER* it was switched" ~ 11,
+  adult_clean_eliz$noticed_water_issue=="4 months *AFTER* it was switched" ~ 4,
+  adult_clean_eliz$noticed_water_issue=="1 year and 5 months *AFTER* it was switched" ~ 17,
+  adult_clean_eliz$noticed_water_issue=="8 months *AFTER* it was switched" ~ 8,
+  adult_clean_eliz$noticed_water_issue=="3 years *AFTER* it was switched" ~ 36,
+  adult_clean_eliz$noticed_water_issue=="2 year and 1 month *AFTER* it was switched" ~ 25,
+  adult_clean_eliz$noticed_water_issue=="2 year and 6 months *AFTER* it was switched" ~ 30,
+  adult_clean_eliz$noticed_water_issue=="1 year and 3 months *AFTER* it was switched" ~ 15,
+  adult_clean_eliz$noticed_water_issue=="1 year and 1 month *AFTER* it was switched" ~ 13
+)
+
+adult_clean_eliz$waterlinereplaced <- ifelse(adult_clean_eliz$water_line_status_after_april2014=="My lead/water lines were replaced", 1, ifelse(is.na(adult_clean_eliz$water_line_status_after_april2014), NA_real_, 0))
+
+subadult <- mutate(adult_clean_eliz, parbloodtestf = blood_test_after_april_2014, parbllf = elevated_lead_after_april_2014, parrashesf = rashes_after_april_2014, parhairf = hairloss_after_april_2014, parnausf = nausea_after_april_2014, parirrf = irritable_after_april_2014, parbloodtestc = getscreened, parbllc = elevated_collapse, parrashesc = rash_collapse, parhairc = hair_collapse, parnausc = nausea_collapse, parirrc = irritable_collapse, paroverall = overall_collapse) %>% select(inclusion, unique_id, age, gender, collapserace, collapseeduc, have_health_insurance, public_benefits, water_exaggerated, children_health_harmed, trust_government_in_future, drink_tap_in_three_years, satisfied_flint_government, satisfied_state_government, satisfied_federal_government, political_affiliation, nightmares, avoided_thinking_crisis, onguard_watchful, numb_detached, felt_guilty, ptsdscore, phq, parbloodtestf, parbllf, parrashesf, parhairf, parnausf, parirrf, parbloodtestc, parbllc, parrashesc, parhairc, parnausc, parirrc, paroverall, confidants2, number_children, employ_status, num_time_notice, watertestbinary, current_zip, waterlinereplaced)
 
 child_adult <- left_join(child_final, subadult, by=c("unique_id"))
 
 rm(list=c("adult_clean_eliz", "subadult", "child_final"))
 
-child_adult$gettested <- ifelse(child_adult$blood_test_after_april_2014=="Yes" & child_adult$blood_test_before_april_2014=="No", 1, ifelse(is.na(child_adult$blood_test_after_april_2014) | is.na(child_adult$blood_test_before_april_2014), NA_real_, 0))
+samp1 <- nrow(child_adult)
 
-child_adult$elevbll <- ifelse(child_adult$elevated_lead_after_april_2014=="Yes" & child_adult$elevated_lead_before_april_2014=="No", 1, ifelse(is.na(child_adult$elevated_lead_after_april_2014) | is.na(child_adult$elevated_lead_before_april_2014), NA_real_, 0))
+#child_adult <- filter(child_adult, age.x >= 5)
+child_adult <- filter(child_adult, age.x >= 0.5)
+samp2 <- nrow(child_adult)
 
-child_adult$rash <- ifelse(child_adult$rash_after_april_2014=="Yes" & child_adult$rash_before_april_2014=="No", 1, ifelse(is.na(child_adult$rash_after_april_2014) | is.na(child_adult$rash_before_april_2014), NA_real_, 0))
+##child_adult <- filter(child_adult, relationship == "Your child" | relationship == "Your grandchild")
 
-child_adult$hair <- ifelse(child_adult$hairloss_after_april_2014=="Yes" & child_adult$hairloss_before_april_2014=="No", 1, ifelse(is.na(child_adult$hairloss_after_april_2014) | is.na(child_adult$hairloss_before_april_2014), NA_real_, 0))
+#child_adult$gettested <- ifelse(child_adult$blood_test_after_april_2014=="Yes" & child_adult$blood_test_before_april_2014=="No", 1, ifelse(is.na(child_adult$blood_test_after_april_2014) | is.na(child_adult$blood_test_before_april_2014), NA_real_, 0))
 
-child_adult$learn <- ifelse(child_adult$learning_after_april_2014=="Yes" & child_adult$learning_before_april_2014=="No", 1, ifelse(is.na(child_adult$learning_after_april_2014) | is.na(child_adult$learning_before_april_2014), NA_real_, 0))
+child_adult$gettested <- ifelse(child_adult$blood_test_after_april_2014=="Yes", 1, ifelse(is.na(child_adult$blood_test_after_april_2014), NA_real_, 0))
 
-child_adult$hyper <- ifelse(child_adult$hyper_after_april_2014=="Yes" & child_adult$hyper_before_april_2014=="No", 1, ifelse(is.na(child_adult$hyper_after_april_2014) | is.na(child_adult$hyper_before_april_2014), NA_real_, 0))
 
-child_adult$irritable <- ifelse(child_adult$irritable_after_april_2014=="Yes" & child_adult$irritable_before_april_2014=="No", 1, ifelse(is.na(child_adult$irritable_after_april_2014) | is.na(child_adult$irritable_before_april_2014), NA_real_, 0))
+#child_adult$elevbll <- ifelse(child_adult$elevated_lead_after_april_2014=="Yes" & child_adult$elevated_lead_before_april_2014=="No", 1, ifelse(is.na(child_adult$elevated_lead_after_april_2014) | is.na(child_adult$elevated_lead_before_april_2014), NA_real_, 0))
 
+child_adult$elevbll <- ifelse(child_adult$elevated_lead_after_april_2014=="Yes", 1, ifelse(is.na(child_adult$elevated_lead_after_april_2014), NA_real_, 0))
+
+#child_adult$rash <- ifelse(child_adult$rash_after_april_2014=="Yes" & child_adult$rash_before_april_2014=="No", 1, ifelse(is.na(child_adult$rash_after_april_2014) | is.na(child_adult$rash_before_april_2014), NA_real_, 0))
+
+child_adult$rash <- ifelse(child_adult$rash_after_april_2014=="Yes", 1, ifelse(is.na(child_adult$rash_after_april_2014), NA_real_, 0))
+
+#child_adult$hair <- ifelse(child_adult$hairloss_after_april_2014=="Yes" & child_adult$hairloss_before_april_2014=="No", 1, ifelse(is.na(child_adult$hairloss_after_april_2014) | is.na(child_adult$hairloss_before_april_2014), NA_real_, 0))
+
+child_adult$hair <- ifelse(child_adult$hairloss_after_april_2014=="Yes", 1, ifelse(is.na(child_adult$hairloss_after_april_2014), NA_real_, 0))
+
+#child_adult$learn <- ifelse(child_adult$learning_after_april_2014=="Yes" & child_adult$learning_before_april_2014=="No", 1, ifelse(is.na(child_adult$learning_after_april_2014) | is.na(child_adult$learning_before_april_2014), NA_real_, 0))
+
+child_adult$learn <- ifelse(child_adult$learning_after_april_2014=="Yes", 1, ifelse(is.na(child_adult$learning_after_april_2014), NA_real_, 0))
+
+#child_adult$hyper <- ifelse(child_adult$hyper_after_april_2014=="Yes" & child_adult$hyper_before_april_2014=="No", 1, ifelse(is.na(child_adult$hyper_after_april_2014) | is.na(child_adult$hyper_before_april_2014), NA_real_, 0))
+
+child_adult$hyper <- ifelse(child_adult$hyper_after_april_2014=="Yes", 1, ifelse(is.na(child_adult$hyper_after_april_2014), NA_real_, 0))
+
+#child_adult$irritable <- ifelse(child_adult$irritable_after_april_2014=="Yes" & child_adult$irritable_before_april_2014=="No", 1, ifelse(is.na(child_adult$irritable_after_april_2014) | is.na(child_adult$irritable_before_april_2014), NA_real_, 0))
+
+child_adult$irritable <- ifelse(child_adult$irritable_after_april_2014=="Yes", 1, ifelse(is.na(child_adult$irritable_after_april_2014), NA_real_, 0))
+
+child_adult$watersource2 <- ifelse(child_adult$watersource=="Bottled water", 1, ifelse(is.na(child_adult$watersource), NA_real_, 0))
+
+child_adult$employ_status2 <- ifelse(child_adult$employ_status=="Employed", "Employed", ifelse(child_adult$employ_status=="Unemployed", "Unemployed", ifelse(is.na(child_adult$employ_status), NA_character_, "Other")))
 
 symp_sub <- select(child_adult, gettested, elevbll, rash, hair, learn, hyper, irritable)
 
@@ -59,12 +111,33 @@ child_adult$racecollapse <- case_when(
   child_adult$reth=="Latino or Hispanic" | child_adult$reth=="Middle Eastern" | child_adult$reth=="Mixed Race" ~ "Other",
   child_adult$reth=="White" ~ "White"
 )
+
+exam <- select(child_adult, child, unique_id, relationship, age.x, gender.x, public_benefits, gettested, elevbll, rash, hair, learn, hyper, irritable, overall_symp, racecollapse, blood_test_after_april_2014, water_exaggerated)
+
+child_adult2 <- child_adult[complete.cases(exam)]
+child_adult <- child_adult2
 ```
 
-First, let's get some descriptives:
-```{r, echo=TRUE, message=FALSE, warning=FALSE}
-child_adult$relationship <- factor(child_adult$relationship, levels=c("Your child", "Your brother or stepbrother", "Your sister or stepsister", "Your niece or nephew", "Your friend's or acquaintance's child or relative", "Your grandchild", "Other relationship"), ordered=TRUE)
+## Introductory Remarks
 
+This report was an attempt to respond to two key reviewer concerns: 1) the presence of children under age 5 in our data--and thus not alive in April 2014, when the water switch happened, and 2) what to do with children who were described by a caregiver who wasn't their parent or grandparent. 
+
+I tried a number of things to figure out what to do with children under age 5. Part of the problem here is that we were looking at excess mortality outcomes (i.e. "Did the child have this symptom after but not before April 2014?"), and for children under age 5, this wasn't defined, since the child wasn't alive before April 2014. I considered looking at 1) just the after outcome ("Did the child have this symptom after April 2014, regardless of whether they had it before 2014?") or 2) forcibly assuming that children under age 5 didn't have the symptom before April 2014. I was disturbed that these two outcome definitions resulted in  different results, with outcome definition (2) yielding many significant results, while outcome definition (1) yielded almost no significant results and different directions of association. That's bad news. Initially, I thought we would exclude all children under age 5. However, after more discussions with Jerel, we instead decided to restrict to children ages 6 months and up, and use outcome definition (1).  
+
+I then looked a little more closely at the second inclusion criteria: children described by an aunt/uncle/babysitter/sibling, rather than a parent/grandparent. After investigating these children more closely, I concluded that we should keep them. They aren't significantly different from children described by a parent/grandparent, and including them in the sample doesn't affect the direction/magnitude of any associations, but it *does* increase our sample size enough to start seeing significant findings, because the larger sample size shrinks the standard errors.
+
+Therefore, I have concluded that our inclusion criteria will be children ages 6 months and up, considering outcomes based on just after April 2014 (and not before) described by any caregiver living in the City of Flint. 
+
+\newpage
+
+## Descriptives
+
+Initially, our data consisted of `r samp1` children. I then impose our first inclusion criterion: children age 6 months and up. This takes the sample down to `r samp2` children. Then I restrict to children with complete data for all predictors used in modeling. This results in a sample of `r nrow(child_adult)` children.
+
+Here are some descriptives on these children:
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+child_adult$relationship <- factor(child_adult$relationship, levels=c("Your child", "Your grandchild", "Your sister or stepsister", "Your brother or stepbrother", "Your niece or nephew", "Your friend's or acquaintance's child or relative", "Other relationship"), ordered = TRUE)
+child_adult$watersource2 <- factor(child_adult$watersource2, levels=c(0, 1), labels=c("Non-bottled water", "Bottled water"))
 child_adult$gettested <- factor(child_adult$gettested, levels=c(0, 1), labels=c("No", "Yes"))
 child_adult$elevbll <- factor(child_adult$elevbll, levels=c(0, 1), labels=c("No", "Yes"))
 child_adult$rash <- factor(child_adult$rash, levels=c(0, 1), labels=c("No", "Yes"))
@@ -77,27 +150,35 @@ child_adult$gendercollapse <- ifelse(child_adult$gender.y=="Transgender Woman" |
 var_label(child_adult$relationship) <- "Child's relationship to survey respondent"
 var_label(child_adult$age.x) <- "Child age"
 var_label(child_adult$gender.x) <- "Child gender"
-var_label(child_adult$watersource) <- "Child water source"
-var_label(child_adult$gettested) <- "Blood lead test after April 2014 and not before"
-var_label(child_adult$elevbll) <- "Elevated BLLs after April 2014 and not before"
-var_label(child_adult$rash) <- "Rashes after April 2014 and not before"
-var_label(child_adult$hair) <- "Hair loss after April 2014 and not before"
-var_label(child_adult$learn) <- "Learning delays after April 2014 and not before"
-var_label(child_adult$hyper) <- "Hyperactivity after April 2014 and not before"
-var_label(child_adult$irritable) <- "Irritability after April 2014 and not before"
-var_label(child_adult$overall_symp) <- "Total number of symptoms after April 2014 and not before"
+var_label(child_adult$watersource2) <- "Child water source"
+var_label(child_adult$gettested) <- "Blood lead test after April 2014"
+var_label(child_adult$elevbll) <- "Elevated BLLs after April 2014"
+var_label(child_adult$rash) <- "Rashes after April 2014"
+var_label(child_adult$hair) <- "Hair loss after April 2014"
+var_label(child_adult$learn) <- "Learning delays after April 2014"
+var_label(child_adult$hyper) <- "Hyperactivity after April 2014"
+var_label(child_adult$irritable) <- "Irritability after April 2014"
+var_label(child_adult$overall_symp) <- "Total number of symptoms after April 2014"
 var_label(child_adult$gendercollapse) <- "Guardian's gender"
 var_label(child_adult$collapserace) <- "Guardian's race/ethnicity"
 var_label(child_adult$collapseeduc) <- "Guardian's education"
 var_label(child_adult$public_benefits) <- "Guardian receives public benefits"
 var_label(child_adult$confidants2) <- "Guardian's social network size"
 var_label(child_adult$age.y) <- "Guardian's age"
-var_label(child_adult$employ_status) <- "Guardian's employment status"
+var_label(child_adult$employ_status2) <- "Guardian's employment status"
 
 child_adult$racecollapse <- factor(child_adult$racecollapse)
 child_adult$unique_id <- factor(child_adult$unique_id)
 
-child_adult <- arrange(child_adult, unique_id, racecollapse)
+child_adult$racecollapse2 <- case_when(
+  child_adult$racecollapse=="Black" ~ "Black",
+  child_adult$racecollapse=="White" | child_adult$racecollapse=="Other" ~ "White/Other",
+  is.na(child_adult$racecollapse) ~ NA_character_
+)
+
+child_adult$racecollapse2 <- factor(child_adult$racecollapse2)
+
+child_adult <- arrange(child_adult, unique_id, racecollapse, racecollapse2)
 
 m <- art(relationship ~ racecollapse + (1 | unique_id), data=child_adult)
 pvalues <- data.frame("Outcome" = "Relationship", "Pvalue" = anova(m)$`Pr(>F)`)
@@ -105,8 +186,9 @@ m <- art(age.x ~ racecollapse + (1 | unique_id), data=child_adult)
 pvalues <- rbind(pvalues, data.frame("Outcome" = "Child age", "Pvalue" = anova(m)$`Pr(>F)`))
 m <- art(factor(gender.x, ordered=TRUE) ~ racecollapse + (1 | unique_id), data=child_adult)
 pvalues <- rbind(pvalues, data.frame("Outcome" = "Gender", "Pvalue" = anova(m)$`Pr(>F)`))
-m <- art(factor(watersource, ordered=TRUE) ~ racecollapse + (1 | unique_id), data=child_adult[!is.na(child_adult$watersource),])
-pvalues <- rbind(pvalues, data.frame("Outcome" = "Watersource", "Pvalue" = anova(m)$`Pr(>F)`))
+m <- art(factor(watersource2, ordered=TRUE) ~ racecollapse2 + (1 | unique_id), data=child_adult[!is.na(child_adult$watersource2),])
+#pvalues <- rbind(pvalues, data.frame("Outcome" = "Watersource", "Pvalue" = anova(m)$`Pr(>F)`))
+pvalues <- rbind(pvalues, data.frame("Outcome" = "Watersource", "Pvalue" = NA_real_))
 m <- art(factor(gettested, ordered=TRUE) ~ racecollapse + (1 | unique_id), data=child_adult[!is.na(child_adult$gettested),])
 pvalues <- rbind(pvalues, data.frame("Outcome" = "BloodTest", "Pvalue" = anova(m)$`Pr(>F)`))
 m <- art(factor(elevbll, ordered=TRUE) ~ racecollapse + (1 | unique_id), data=child_adult[!is.na(child_adult$elevbll),])
@@ -139,7 +221,7 @@ m <- art(factor(racecollapse, ordered=TRUE) ~ factor(collapseeduc, ordered=TRUE)
 pvalues <- rbind(pvalues, data.frame("Outcome" = "Guardian's Education", "Pvalue" = anova(m)$`Pr(>F)`))
 m <- art(factor(racecollapse, ordered=TRUE) ~ factor(public_benefits, ordered=TRUE) + (1 | unique_id), data=child_adult[!is.na(child_adult$public_benefits),])
 pvalues <- rbind(pvalues, data.frame("Outcome" = "Guardian receives public benefits", "Pvalue" = anova(m)$`Pr(>F)`))
-m <- art(factor(racecollapse, ordered=TRUE) ~ factor(employ_status, ordered=TRUE) + (1 | unique_id), data=child_adult[!is.na(child_adult$employ_status),])
+m <- art(factor(racecollapse, ordered=TRUE) ~ factor(employ_status2, ordered=TRUE) + (1 | unique_id), data=child_adult[!is.na(child_adult$employ_status2),])
 pvalues <- rbind(pvalues, data.frame("Outcome" = "Guardian's employment status", "Pvalue" = anova(m)$`Pr(>F)`))
 
 child_adult$agegrp2 <- case_when(
@@ -147,106 +229,144 @@ child_adult$agegrp2 <- case_when(
   child_adult$age.x > 0.5 ~ "Child"
 )
 
-table_pred <- CreateTableOne(vars=c("relationship", "age.x", "gender.x", "watersource", "age.y", "gendercollapse", "collapserace", "collapseeduc", "public_benefits", "employ_status"), strata = "racecollapse", data=child_adult, argsNormal = list(NULL), argsNonNormal = list(var.equal = TRUE), includeNA = TRUE)
+table_pred <- CreateTableOne(vars=c("relationship", "age.x", "gender.x", "age.y", "gendercollapse", "collapserace", "collapseeduc", "public_benefits", "employ_status2"), strata = "racecollapse", data=child_adult, argsNormal = list(NULL), argsNonNormal = list(var.equal = TRUE), includeNA = TRUE)
 
-table_pred_nostrat <- CreateTableOne(vars=c("relationship", "age.x", "gender.x", "watersource", "age.y", "gendercollapse", "collapserace", "collapseeduc", "public_benefits", "employ_status"), data=child_adult, argsNormal = list(NULL), argsNonNormal = list(var.equal = TRUE), includeNA = TRUE)
+table_pred_nostrat <- CreateTableOne(vars=c("relationship", "age.x", "gender.x", "age.y", "gendercollapse", "collapserace", "collapseeduc", "public_benefits", "employ_status2"), data=child_adult, argsNormal = list(NULL), argsNonNormal = list(var.equal = TRUE), includeNA = TRUE)
 
 table_outcome <- CreateTableOne(vars=c("gettested", "elevbll", "rash", "hair", "learn", "hyper","irritable", "overall_symp"), strata = "racecollapse", data=child_adult, argsNormal = list(NULL), argsNonNormal = list(var.equal = TRUE), includeNA = TRUE)
 
 table_outcome_nostrat <- CreateTableOne(vars=c("gettested", "elevbll", "rash", "hair", "learn", "hyper","irritable", "overall_symp"), data=child_adult, argsNormal = list(NULL), argsNonNormal = list(var.equal = TRUE), includeNA = TRUE)
 
-kable(print(table_pred, contDigits=1, varLabel = T, printToggle=FALSE), booktabs=T) %>% add_indent(c(3:9, 13:18, 22:24, 26:30, 32:34, 36:39)) %>% kable_styling(position="center")
+test <- print(table_pred, contDigits=1, varLabel = T, printToggle=FALSE)
+test["Child's relationship to survey respondent (%)", "p"] <- paste0(round(pvalues[pvalues$Outcome=="Relationship", 2], digits = 3))
+test["Child age (mean (SD))", "p"] <- paste0(round(pvalues[pvalues$Outcome=="Child age", 2], digits = 3))
+test["Child gender = Male (%)", "p"] <- paste0(round(pvalues[pvalues$Outcome=="Gender", 2], digits = 3))
+test["Guardian's age (mean (SD))", "p"] <- paste0(round(pvalues[pvalues$Outcome=="Guardian age", 2], digits = 3))
+test["Guardian's gender = Male (%)", "p"] <- paste0(round(pvalues[pvalues$Outcome=="Guardian's Gender", 2], digits = 3))
+test["Guardian's race/ethnicity (%)", "p"] <- paste0(round(pvalues[pvalues$Outcome=="Guardian's Race", 2], digits = 3))
+test["Guardian's education (%)", "p"] <- paste0(round(pvalues[pvalues$Outcome=="Guardian's Education", 2], digits = 3))
+test["Guardian receives public benefits (%)", "p"] <- paste0(round(pvalues[pvalues$Outcome=="Guardian receives public benefits", 2], digits = 3))
+test["Guardian's employment status (%)", "p"] <- paste0(round(pvalues[pvalues$Outcome=="Guardian's employment status", 2], digits = 3))
 
-kable(print(table_pred_nostrat, contDigits=1, varLabel = T, printToggle=FALSE), booktabs=T) %>% add_indent(c(3:9, 13:18, 22:24, 26:30, 32:34, 36:39)) %>% kable_styling(position="center")
+test2 <- print(table_outcome, contDigits=1, varLabel = T, printToggle=FALSE)
+test2["Blood lead test after April 2014 = Yes (%)", "p"] <- paste0(round(pvalues[pvalues$Outcome=="BloodTest", 2], digits = 3))
+test2["Elevated BLLs after April 2014 = Yes (%)", "p"] <- paste0(round(pvalues[pvalues$Outcome=="BLLs", 2], digits = 3))
+test2["Rashes after April 2014 = Yes (%)", "p"] <- paste0(round(pvalues[pvalues$Outcome=="Rash", 2], digits = 3))
+test2["Hair loss after April 2014 = Yes (%)", "p"] <- paste0(round(pvalues[pvalues$Outcome=="Hairloss", 2], digits = 3))
+test2["Learning delays after April 2014 = Yes (%)", "p"] <- paste0(round(pvalues[pvalues$Outcome=="Learning", 2], digits = 3))
+test2["Hyperactivity after April 2014 = Yes (%)", "p"] <- paste0(round(pvalues[pvalues$Outcome=="Hyper", 2], digits = 3))
+test2["Irritability after April 2014 = Yes (%)", "p"] <- paste0(round(pvalues[pvalues$Outcome=="Irritable", 2], digits = 3))
+test2["Total number of symptoms after April 2014 (mean (SD))", "p"] <- paste0(round(pvalues[pvalues$Outcome=="Overall", 2], digits = 3))
 
-kable(print(table_outcome, contDigits=1, varLabel = T, printToggle=FALSE), booktabs=T) %>% add_indent(c(3:5, 7:9, 11:13, 15:17, 19:21, 23:25, 27:29)) %>% kable_styling(position="center")
+kable(test, booktabs=T) %>% add_indent(c(3:9, 15:17, 19:23, 25:27, 29:31)) %>% kable_styling(position="center")
 
-kable(print(table_outcome_nostrat, contDigits=1, varLabel = T, printToggle=FALSE), booktabs=T) %>% add_indent(c(3:5, 7:9, 11:13, 15:17, 19:21, 23:25, 27:29)) %>% kable_styling(position="center")
+kable(print(table_pred_nostrat, contDigits=1, varLabel = T, printToggle=FALSE), booktabs=T) %>% add_indent(c(3:9, 15:17, 19:23, 25:27, 29:31)) %>% kable_styling(position="center")
+
+kable(test2, booktabs=T) %>% kable_styling(position="center")
+
+kable(print(table_outcome_nostrat, contDigits=1, varLabel = T, printToggle=FALSE), booktabs=T) %>% kable_styling(position="center")
 ```
 
-Now, onto modeling for children health outcomes:
-```{r, echo=TRUE, message=FALSE, warning=FALSE}
+\newpage
+
+## Multivariable modeling results
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 #For water source:
+child_adult$water_exaggeratedbinary <- as.numeric(child_adult$water_exaggerated=="Agree" | child_adult$water_exaggerated=="Strongly Agree")
 child_adult$pubben <- ifelse(child_adult$public_benefits=="Yes", 1, ifelse(is.na(child_adult$public_benefits), NA_real_, 0))
 child_adult$bottledwater <- ifelse(child_adult$watersource=="Bottled water", 1, ifelse(is.na(child_adult$watersource), NA_real_, 0))
 child_adult$employcollapse <- ifelse(child_adult$employ_status=="Employed", "Employed", ifelse(child_adult$employ_status=="Unemployed", "Unemployed", ifelse(is.na(child_adult$employ_status), NA_character_, "Other")))
 
-watersource_model <- glmer(bottledwater ~ gender.x + age.x + racecollapse + pubben + (1 | unique_id), data = child_adult, family = "binomial") ##issues with convergence; did not include
+##watersource_model <- glmer(bottledwater ~ gender.x + age.x + racecollapse + pubben + (1 | unique_id), data = child_adult, family = "binomial") ##issues with convergence; did not include
+
+##summary(watersource_model)
 
 #For getting tested:
-#child_adult$gettested <- ifelse(child_adult$blood_test_after_april_2014=="Yes", 1, ifelse(is.na(child_adult$blood_test_after_april_2014), NA_real_, 0))
-
 tested_model_noadult <- glmer(gettested ~ gender.x + age.x + racecollapse + pubben + (1 | unique_id), data = child_adult, family = "binomial")
+tested_model_adult <- glmer(gettested ~ gender.x + age.x + racecollapse + pubben + water_exaggeratedbinary + (1 | unique_id), data = child_adult, family = "binomial")
 
-effects_mat <- data.frame("Outcome" = rep("Get tested", 5), "Variable" = c("Gender", "Age", "Race-Other", "Race-White", "Public Benefits"), "Estimate" = summary(tested_model_noadult)$coefficients[-1,1], "StErr" = summary(tested_model_noadult)$coefficients[-1,2], "Pvalue" = summary(tested_model_noadult)$coefficients[-1,4])
+summary(tested_model_noadult)
+summary(tested_model_adult)
+
+effects_mat <- data.frame("Outcome" = rep("Get tested", 6), "Variable" = c("Male gender (ref: Female gender)", "Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Receives public benefits (ref: No benefits)", "Water crisis was exaggerated (ref: Crisis not exaggerated)"), "Estimate" = c(summary(tested_model_noadult)$coefficients[-1,1], summary(tested_model_adult)$coefficients[7,1]), "StErr" = c(summary(tested_model_noadult)$coefficients[-1,2], summary(tested_model_adult)$coefficients[7,2]), "Pvalue" = c(summary(tested_model_noadult)$coefficients[-1,4], summary(tested_model_adult)$coefficients[7,4]))
 
 #For having elevated BLLs:
-#child_adult$elevbll <- ifelse(child_adult$elevated_lead_after_april_2014=="Yes", 1, ifelse(is.na(child_adult$elevated_lead_after_april_2014), NA_real_, 0))
+#bll_model_noadult <- glmer(elevbll ~ gender.x + age.x + racecollapse + pubben + (1 | unique_id), data = child_adult, family = "binomial")
+#bll_model_adult <- glmer(elevbll ~ gender.x + scale(age.x) + racecollapse + pubben + as.numeric(blood_test_after_april_2014=="Yes") + (1 | unique_id), data = child_adult, family = "binomial") # Not included due to convergence issues
 
-bll_model_noadult <- glmer(elevbll ~ gender.x + age.x + racecollapse + pubben + (1 | unique_id), data = child_adult, family = "binomial")
-bll_model_adult <- glmer(elevbll ~ gender.x + age.x + racecollapse + pubben + gettested + (1 | unique_id), data = child_adult, family = "binomial") # + parbllc 
+#summary(bll_model_noadult)
+#summary(bll_model_adult)
+  
+#subdat <- data.frame("Outcome" = rep("Elevated BLLs", 5), "Variable" = c("Gender", "Age", "Race-Other", "Race-White", "Public Benefits"), "Estimate" = c(summary(bll_model_noadult)$coefficients[-1,1]), "StErr" = c(summary(bll_model_noadult)$coefficients[-1,2]), "Pvalue" = c(summary(bll_model_noadult)$coefficients[-1,4]))
 
-subdat <- data.frame("Outcome" = rep("Elevated BLLs", 6), "Variable" = c("Gender", "Age", "Race-Other", "Race-White", "Public Benefits", "Child Screened"), "Estimate" = c(summary(bll_model_noadult)$coefficients[-1,1], summary(bll_model_adult)$coefficients[7,1]), "StErr" = c(summary(bll_model_noadult)$coefficients[-1,2], summary(bll_model_adult)$coefficients[7,2]), "Pvalue" = c(summary(bll_model_noadult)$coefficients[-1,4], summary(bll_model_adult)$coefficients[7,4]))
-
-effects_mat <- rbind(effects_mat, subdat)
+#effects_mat <- rbind(effects_mat, subdat)
 
 #For having rashes:
-#child_adult$rash <- ifelse(child_adult$rash_after_april_2014=="Yes", 1, ifelse(is.na(child_adult$rash_after_april_2014), NA_real_, 0))
-
 rash_model_noadult <- glmer(rash ~ gender.x + age.x + racecollapse + pubben + (1 | unique_id), data = child_adult, family = "binomial")
-rash_model_adult <- glmer(rash ~ gender.x + age.x + racecollapse + pubben + gettested + (1 | unique_id), data = child_adult, family = "binomial")
+summary(rash_model_noadult)
+rash_model_adult <- glmer(rash ~ gender.x + age.x + racecollapse + pubben + as.numeric(blood_test_after_april_2014=="Yes") + (1 | unique_id), data = child_adult, family = "binomial")
+summary(rash_model_adult)
 
-subdat <- data.frame("Outcome" = rep("Rashes", 6), "Variable" = c("Gender", "Age", "Race-Other", "Race-White", "Public Benefits", "Child Screened"), "Estimate" = c(summary(rash_model_noadult)$coefficients[-1,1], summary(rash_model_adult)$coefficients[7,1]), "StErr" = c(summary(rash_model_noadult)$coefficients[-1,2], summary(rash_model_adult)$coefficients[7,2]), "Pvalue" = c(summary(rash_model_noadult)$coefficients[-1,4], summary(rash_model_adult)$coefficients[7,4]))
+subdat <- data.frame("Outcome" = rep("Rashes", 6), "Variable" = c("Male gender (ref: Female gender)", "Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Receives public benefits (ref: No benefits)", "Child screened for BLLs (ref: Child not screened for BLLs"), "Estimate" = c(summary(rash_model_noadult)$coefficients[-1,1], summary(rash_model_adult)$coefficients[7,1]), "StErr" = c(summary(rash_model_noadult)$coefficients[-1,2], summary(rash_model_adult)$coefficients[7,2]), "Pvalue" = c(summary(rash_model_noadult)$coefficients[-1,4], summary(rash_model_adult)$coefficients[7,4]))
 
 effects_mat <- rbind(effects_mat, subdat)
 
 #For having hair loss:
-#child_adult$hair <- ifelse(child_adult$hairloss_after_april_2014=="Yes", 1, ifelse(is.na(child_adult$hairloss_after_april_2014), NA_real_, 0))
+#hair_model_noadult <- glmer(hair ~ gender.x + scale(age.x) + racecollapse + pubben + (1 | unique_id), data = child_adult, family = "binomial") ## convergence issues; did not include
+#summary(hair_model_noadult)
+#hair_model_adult <- glmer(hair ~ gender.x + scale(age.x) + racecollapse + pubben + as.numeric(blood_test_after_april_2014=="Yes") + (1 | unique_id), data = child_adult, family = "binomial") ## convergence issues; did not include
+#summary(hair_model_adult)
 
-hair_model_noadult <- glmer(hair ~ gender.x + age.x + racecollapse + pubben + (1 | unique_id), data = child_adult, family = "binomial") ## convergence issues; did not include
-hair_model_adult <- glmer(hair ~ gender.x + age.x + racecollapse + pubben + gettested + (1 | unique_id), data = child_adult, family = "binomial") ## convergence issues; did not include
+#subdat <- data.frame("Outcome" = rep("Hairloss", 6), "Variable" = c("Male gender (ref: Female gender)", "Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Receives public benefits (ref: No benefits)", "Child screened for BLLs (ref: Child not screened for BLLs"), "Estimate" = c(summary(hair_model_noadult)$coefficients[-1,1], summary(hair_model_adult)$coefficients[7,1]), "StErr" = c(summary(hair_model_noadult)$coefficients[-1,2], summary(hair_model_adult)$coefficients[7,2]), "Pvalue" = c(summary(hair_model_noadult)$coefficients[-1,4], summary(hair_model_adult)$coefficients[7,4]))
+
+#effects_mat <- rbind(effects_mat, subdat)
 
 #For having learning delays:
-#child_adult$learn <- ifelse(child_adult$learning_after_april_2014=="Yes", 1, ifelse(is.na(child_adult$learning_after_april_2014), NA_real_, 0))
-
 learn_model_noadult <- glmer(learn ~ gender.x + age.x + racecollapse + pubben + (1 | unique_id), data = child_adult, family = "binomial")
-learn_model_layer2 <- glmer(learn ~ gender.x + age.x + racecollapse + pubben + gettested + (1 | unique_id), data = child_adult, family = "binomial")
+summary(learn_model_noadult)
 
-subdat <- data.frame("Outcome" = rep("Learning Delays", 6), "Variable" = c("Gender", "Age", "Race-Other", "Race-White", "Public Benefits", "Child Screened"), "Estimate" = c(summary(learn_model_noadult)$coefficients[-1,1], summary(learn_model_layer2)$coefficients[7,1]), "StErr" = c(summary(learn_model_noadult)$coefficients[-1,2], summary(learn_model_layer2)$coefficients[7,2]), "Pvalue" = c(summary(learn_model_noadult)$coefficients[-1,4], summary(learn_model_layer2)$coefficients[7,4]))
+learn_model_layer2 <- glmer(learn ~ gender.x + age.x + racecollapse + pubben + as.numeric(blood_test_after_april_2014=="Yes") + (1 | unique_id), data = child_adult, family = "binomial")
+summary(learn_model_layer2)
+
+subdat <- data.frame("Outcome" = rep("Learning Delays", 6), "Variable" = c("Male gender (ref: Female gender)", "Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Receives public benefits (ref: No benefits)", "Child screened for BLLs (ref: Child not screened for BLLs"), "Estimate" = c(summary(learn_model_noadult)$coefficients[-1,1], summary(learn_model_layer2)$coefficients[7,1]), "StErr" = c(summary(learn_model_noadult)$coefficients[-1,2], summary(learn_model_layer2)$coefficients[7,2]), "Pvalue" = c(summary(learn_model_noadult)$coefficients[-1,4], summary(learn_model_layer2)$coefficients[7,4]))
 
 effects_mat <- rbind(effects_mat, subdat)
 
 #For having hyperactivity:
-#child_adult$hyper <- ifelse(child_adult$hyper_after_april_2014=="Yes", 1, ifelse(is.na(child_adult$hyper_after_april_2014), NA_real_, 0))
+hyper_model_noadult <- glmer(hyper ~ gender.x + scale(age.x) + racecollapse + pubben + (1 | unique_id), data = child_adult, family = "binomial")
+summary(hyper_model_noadult)
 
-hyper_model_noadult <- glmer(hyper ~ gender.x + age.x + racecollapse + pubben + (1 | unique_id), data = child_adult, family = "binomial")
-hyper_model_layer2 <- glmer(hyper ~ gender.x + age.x + racecollapse + pubben + gettested + (1 | unique_id), data = child_adult, family = "binomial")
+hyper_model_layer2 <- glmer(hyper ~ gender.x + age.x + racecollapse + pubben + as.numeric(blood_test_after_april_2014=="Yes") + (1 | unique_id), data = child_adult, family = "binomial")
+summary(hyper_model_layer2)
 
-subdat <- data.frame("Outcome" = rep("Hyperactivity", 6), "Variable" = c("Gender", "Age", "Race-Other", "Race-White", "Public Benefits", "Child Screened"), "Estimate" = c(summary(hyper_model_noadult)$coefficients[-1,1], summary(hyper_model_layer2)$coefficients[7,1]), "StErr" = c(summary(hyper_model_noadult)$coefficients[-1,2], summary(hyper_model_layer2)$coefficients[7,2]), "Pvalue" = c(summary(hyper_model_noadult)$coefficients[-1,4], summary(hyper_model_layer2)$coefficients[7,4]))
+subdat <- data.frame("Outcome" = rep("Hyperactivity", 6), "Variable" = c("Male gender (ref: Female gender)", "Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Receives public benefits (ref: No benefits)", "Child screened for BLLs (ref: Child not screened for BLLs"), "Estimate" = c(summary(hyper_model_noadult)$coefficients[-1,1], summary(hyper_model_layer2)$coefficients[7,1]), "StErr" = c(summary(hyper_model_noadult)$coefficients[-1,2], summary(hyper_model_layer2)$coefficients[7,2]), "Pvalue" = c(summary(hyper_model_noadult)$coefficients[-1,4], summary(hyper_model_layer2)$coefficients[7,4]))
 
 effects_mat <- rbind(effects_mat, subdat)
 
 #For having irritability:
-#child_adult$irritable <- ifelse(child_adult$irritable_after_april_2014=="Yes", 1, ifelse(is.na(child_adult$irritable_after_april_2014), NA_real_, 0))
-
 irr_model_noadult <- glmer(irritable ~ gender.x + age.x + racecollapse + pubben + (1 | unique_id), data = child_adult, family = "binomial")
-irr_model_adult <- glmer(irritable ~ gender.x + age.x + racecollapse + pubben + gettested + (1 | unique_id), data = child_adult, family = "binomial")
+summary(irr_model_noadult)
+irr_model_adult <- glmer(irritable ~ gender.x + age.x + racecollapse + pubben + as.numeric(blood_test_after_april_2014=="Yes") + (1 | unique_id), data = child_adult, family = "binomial")
+summary(irr_model_adult)
 
-subdat <- data.frame("Outcome" = rep("Irritability", 6), "Variable" = c("Gender", "Age", "Race-Other", "Race-White", "Public Benefits", "Child Screened"), "Estimate" = c(summary(irr_model_noadult)$coefficients[-1,1], summary(irr_model_adult)$coefficients[7,1]), "StErr" = c(summary(irr_model_noadult)$coefficients[-1,2], summary(irr_model_adult)$coefficients[7,2]), "Pvalue" = c(summary(irr_model_noadult)$coefficients[-1,4], summary(irr_model_adult)$coefficients[7,4]))
+subdat <- data.frame("Outcome" = rep("Irritability", 6), "Variable" = c("Male gender (ref: Female gender)", "Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Receives public benefits (ref: No benefits)", "Child screened for BLLs (ref: Child not screened for BLLs"), "Estimate" = c(summary(irr_model_noadult)$coefficients[-1,1], summary(irr_model_adult)$coefficients[7,1]), "StErr" = c(summary(irr_model_noadult)$coefficients[-1,2], summary(irr_model_adult)$coefficients[7,2]), "Pvalue" = c(summary(irr_model_noadult)$coefficients[-1,4], summary(irr_model_adult)$coefficients[7,4]))
 
 effects_mat <- rbind(effects_mat, subdat)
 
 #For overall symptoms:
-overall_model_noadult <- glmer(overall_symp ~ gender.x + age.x + racecollapse + pubben + (1 | unique_id), data = child_adult)
-overall_model_adult <- glmer(overall_symp ~ gender.x + age.x + racecollapse + pubben + gettested + (1 | unique_id), data = child_adult)
+overall_model_noadult <- lmer(overall_symp ~ gender.x + age.x + racecollapse + pubben + (1 | unique_id), data = child_adult)
+summary(overall_model_noadult)
 
-subdat <- data.frame("Outcome" = rep("Overall Symptoms", 6), "Variable" = c("Gender", "Age", "Race-Other", "Race-White", "Public Benefits", "Child Screened"), "Estimate" = c(summary(overall_model_noadult)$coefficients[-1,1], summary(overall_model_adult)$coefficients[7,1]), "StErr" = c(summary(overall_model_noadult)$coefficients[-1,2], summary(overall_model_adult)$coefficients[7,2]), "Pvalue" = pnorm(c(summary(overall_model_noadult)$coefficients[-1,3], summary(overall_model_adult)$coefficients[7,3]), lower.tail = FALSE))
+overall_model_adult <- lmer(overall_symp ~ gender.x + age.x + racecollapse + pubben + as.numeric(blood_test_after_april_2014=="Yes") + water_exaggeratedbinary + (1 | unique_id), data = child_adult)
+summary(overall_model_adult)
+
+subdat <- data.frame("Outcome" = rep("Overall Symptoms", 7), "Variable" = c("Male gender (ref: Female gender)", "Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Receives public benefits (ref: No benefits)", "Child screened for BLLs (ref: Child not screened for BLLs)", "Water crisis was exaggerated (ref: Crisis not exaggerated)"), "Estimate" = c(summary(overall_model_noadult)$coefficients[-1,1], summary(overall_model_adult)$coefficients[7:8,1]), "StErr" = c(summary(overall_model_noadult)$coefficients[-1,2], summary(overall_model_adult)$coefficients[7:8,2]), "Pvalue" = pnorm(c(summary(overall_model_noadult)$coefficients[-1,3], summary(overall_model_adult)$coefficients[7:8,3]), lower.tail = FALSE))
 
 effects_mat <- rbind(effects_mat, subdat)
 ```
 
-Now we tidy up our effects matrix and apply a multiple testing correction:
-```{r, echo=TRUE, message=FALSE, warning=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 effects_mat$BHpvalue <- p.adjust(effects_mat$Pvalue, method="BH")
 
 effects_mat$lower <- case_when(
@@ -267,56 +387,10 @@ effects_mat$effect <- case_when(
 effects_mat$label <- paste0(round(effects_mat$effect, digits=1), " (", round(effects_mat$lower, digits = 1), ", ", round(effects_mat$upper, digits = 1), ")")
 
 pretty_effects <- select(effects_mat, Outcome, Variable, label, BHpvalue)
+pretty_effects$BHpvalue <- round(pretty_effects$BHpvalue, 3)
+rownames(pretty_effects) <- NULL
+
+kable(pretty_effects, col.names = c("Outcome", "Predictor", "Odds Ratio (95% CI)", "P-value"))
 ```
 
-And now modeling for adult experiences (dropped from paper 2; will be used elsewhere:
-```{r, echo=TRUE, message=FALSE, warning=FALSE}
-##Assembling child health indicators:
-child_sum <- group_by(child_adult, unique_id) %>% summarise(child_screen = as.numeric(sum(as.numeric(gettested)-1, na.rm=TRUE) > 0), child_symps = sum(overall_symp), child_bll = as.numeric(sum(as.numeric(elevbll)-1, na.rm=TRUE) > 0), child_rash = as.numeric(sum(as.numeric(rash)-1, na.rm=TRUE) > 0), child_hair = as.numeric(sum(as.numeric(hair)-1, na.rm=TRUE) > 0), child_learning = as.numeric(sum(as.numeric(learn)-1, na.rm=TRUE) > 0), child_hyper = as.numeric(sum(as.numeric(hyper)-1, na.rm=TRUE) > 0), child_irritable = as.numeric(sum(as.numeric(irritable)-1, na.rm=TRUE) > 0))
-
-child_adult_sub <- unique(select(child_adult, unique_id, age.y, gendercollapse, collapserace, collapseeduc, pubben, water_exaggerated, children_health_harmed, trust_government_in_future, satisfied_flint_government, satisfied_state_government, satisfied_federal_government, ptsdscore, phq, parbloodtestc, parbllc, parrashesc, parhairc, parnausc, parirrc, paroverall, confidants2, number_children))
-
-child_adult_sum <- left_join(child_adult_sub, child_sum, by=c("unique_id"))
-
-##Outcome: believing water crisis exaggerated
-exaggerated_layer1 <- glm(as.numeric(water_exaggerated=="Agree" | water_exaggerated=="Strongly Agree") ~ age.y + gendercollapse + collapserace + pubben + confidants2 + number_children, data = child_adult_sum, family = "binomial")
-exaggerated_layer2 <- logistf(as.numeric(water_exaggerated=="Agree" | water_exaggerated=="Strongly Agree") ~ age.y + gendercollapse + collapserace + pubben + confidants2 +  number_children + paroverall + child_symps + child_screen + child_bll + child_rash + child_learning + child_hyper + child_irritable, data = child_adult_sum)
-test <- summary(exaggerated_layer2)
-
-subdat <- data.frame("Outcome" = rep("Crisis Exaggerated", 15), "Variable" = c("Guardian Age", "Guardian Male", "Guardian Race-Other", "Guardian Race-White", "Public Benefits", "Number of confidants", "Number of children", "Number of adult symptoms", "Number of child symptoms", "Child screened", "Child with BLL", "Child with Rash", "Child with Learning", "Child with Hyper", "Child with Irritability"), "Estimate" = c(summary(exaggerated_layer1)$coefficients[-1,1], test$coefficients[9:16]), "StErr" = c(summary(exaggerated_layer1)$coefficients[-1,2], sqrt(diag(test$var)[9:16])), "Pvalue" = c(summary(exaggerated_layer1)$coefficients[-1,4], test$prob[9:16]))
-
-effects_mat <- rbind(effects_mat, subdat)
-
-##Outcome: believing children's health was harmed
-health_layer1 <- glm(as.numeric(children_health_harmed=="Agree" | children_health_harmed=="Strongly Agree") ~ age.y + gendercollapse + collapserace + pubben + confidants2 + number_children, data = child_adult_sum, family = "binomial")
-health_layer2 <- glm(as.numeric(children_health_harmed=="Agree" | children_health_harmed=="Strongly Agree") ~ age.y + gendercollapse + collapserace + pubben + confidants2 +  number_children + paroverall + child_symps + child_screen + child_bll + child_rash + child_learning + child_hyper + child_irritable, data = child_adult_sum, family = "binomial")
-
-subdat <- data.frame("Outcome" = rep("Children's Health Harmed", 15), "Variable" = c("Guardian Age", "Guardian Male", "Guardian Race-Other", "Guardian Race-White", "Public Benefits", "Number of confidants", "Number of children", "Number of adult symptoms", "Number of child symptoms", "Child screened", "Child with BLL", "Child with Rash", "Child with Learning", "Child with Hyper", "Child with Irritability"), "Estimate" = c(summary(health_layer1)$coefficients[-1,1], summary(health_layer2)$coefficients[9:16,1]), "StErr" = c(summary(health_layer1)$coefficients[-1,2], summary(health_layer2)$coefficients[9:16,2]), "Pvalue" = c(summary(health_layer1)$coefficients[-1,4], summary(health_layer2)$coefficients[9:16,4]))
-
-effects_mat <- rbind(effects_mat, subdat)
-
-##Outcome: having trust in government
-trust_layer1 <- glm(as.numeric(trust_government_in_future=="Agree" | trust_government_in_future=="Strongly Agree") ~ age.y + gendercollapse + collapserace + pubben + confidants2 + number_children, data = child_adult_sum, family = "binomial")
-trust_layer2 <- glm(as.numeric(trust_government_in_future=="Agree" | trust_government_in_future=="Strongly Agree") ~ age.y + gendercollapse + collapserace + pubben + confidants2 +  number_children + paroverall + child_symps + child_screen + child_bll + child_rash + child_learning + child_hyper + child_irritable, data = child_adult_sum, family = "binomial")
-
-subdat <- data.frame("Outcome" = rep("Trust government", 15), "Variable" = c("Guardian Age", "Guardian Male", "Guardian Race-Other", "Guardian Race-White", "Public Benefits", "Number of confidants", "Number of children", "Number of adult symptoms", "Number of child symptoms", "Child screened", "Child with BLL", "Child with Rash", "Child with Learning", "Child with Hyper", "Child with Irritability"), "Estimate" = c(summary(trust_layer1)$coefficients[-1,1], summary(trust_layer2)$coefficients[9:16,1]), "StErr" = c(summary(trust_layer1)$coefficients[-1,2], summary(trust_layer2)$coefficients[9:16,2]), "Pvalue" = c(summary(trust_layer1)$coefficients[-1,4], summary(trust_layer2)$coefficients[9:16,4]))
-
-effects_mat <- rbind(effects_mat, subdat)
-
-##Outcome: PTSD
-ptsd_layer1 <- glm(as.numeric(ptsdscore >= 3) ~ age.y + gendercollapse + collapserace + pubben + confidants2 + number_children, data = child_adult_sum, family = "binomial")
-ptsd_layer2 <- glm(as.numeric(ptsdscore >= 3) ~ age.y + gendercollapse + collapserace + pubben + confidants2 +  number_children + paroverall + child_symps + child_screen + child_bll + child_rash + child_learning + child_hyper + child_irritable, data = child_adult_sum, family = "binomial")
-
-subdat <- data.frame("Outcome" = rep("PTSD", 15), "Variable" = c("Guardian Age", "Guardian Male", "Guardian Race-Other", "Guardian Race-White", "Public Benefits", "Number of confidants", "Number of children", "Number of adult symptoms", "Number of child symptoms", "Child screened", "Child with BLL", "Child with Rash", "Child with Learning", "Child with Hyper", "Child with Irritability"), "Estimate" = c(summary(ptsd_layer1)$coefficients[-1,1], summary(ptsd_layer2)$coefficients[9:16,1]), "StErr" = c(summary(ptsd_layer1)$coefficients[-1,2], summary(ptsd_layer2)$coefficients[9:16,2]), "Pvalue" = c(summary(ptsd_layer1)$coefficients[-1,4], summary(ptsd_layer2)$coefficients[9:16,4]))
-
-effects_mat <- rbind(effects_mat, subdat)
-
-##Outcome: PHQ
-phq_layer1 <- glm(as.numeric(phq >= 6) ~ age.y + gendercollapse + collapserace + pubben + confidants2 + number_children, data = child_adult_sum, family = "binomial")
-phq_layer2 <- glm(as.numeric(phq >= 6) ~ age.y + gendercollapse + collapserace + pubben + confidants2 +  number_children + paroverall + child_symps + child_screen + child_bll + child_rash + child_learning + child_hyper + child_irritable, data = child_adult_sum, family = "binomial")
-
-subdat <- data.frame("Outcome" = rep("Depression", 15), "Variable" = c("Guardian Age", "Guardian Male", "Guardian Race-Other", "Guardian Race-White", "Public Benefits", "Number of confidants", "Number of children", "Number of adult symptoms", "Number of child symptoms", "Child screened", "Child with BLL", "Child with Rash", "Child with Learning", "Child with Hyper", "Child with Irritability"), "Estimate" = c(summary(phq_layer1)$coefficients[-1,1], summary(phq_layer2)$coefficients[9:16,1]), "StErr" = c(summary(phq_layer1)$coefficients[-1,2], summary(phq_layer2)$coefficients[9:16,2]), "Pvalue" = c(summary(phq_layer1)$coefficients[-1,4], summary(phq_layer2)$coefficients[9:16,4]))
-
-effects_mat <- rbind(effects_mat, subdat)
-```
-
+Note that these modeling results doesn't include one important outcomes: child water source. I was unable to get this model to fit stably because of the small number of children not drinking bottled water. In addition, I couldn't consider the effect of the caregiver believing the water crisis was exaggerated on most of the outcomes because of convergence issues, and similarly with the relationship between the child being tested and the child having elevated BLLs.
