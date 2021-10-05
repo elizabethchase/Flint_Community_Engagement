@@ -532,18 +532,18 @@ effects_mat2 <- rbind(effects_mat2, subdat)
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 
 effects_mat2$lower <- case_when(
-  effects_mat2$Outcome=="Overall Symptoms" ~ effects_mat2$Lower,
-  effects_mat2$Outcome!="Overall Symptoms" ~ exp(effects_mat2$Lower)
+  effects_mat2$Outcome=="Total Symptoms" ~ effects_mat2$Lower,
+  effects_mat2$Outcome!="Total Symptoms" ~ exp(effects_mat2$Lower)
 )
 
 effects_mat2$upper <- case_when(
-  effects_mat2$Outcome=="Overall Symptoms" ~ effects_mat2$Upper,
-  effects_mat2$Outcome!="Overall Symptoms" ~ exp(effects_mat2$Upper)
+  effects_mat2$Outcome=="Total Symptoms" ~ effects_mat2$Upper,
+  effects_mat2$Outcome!="Total Symptoms" ~ exp(effects_mat2$Upper)
 )
 
 effects_mat2$estimate <- case_when(
-  effects_mat2$Outcome=="Overall Symptoms" ~ effects_mat2$Estimate,
-  effects_mat2$Outcome!="Overall Symptoms" ~ exp(effects_mat2$Estimate)
+  effects_mat2$Outcome=="Total Symptoms" ~ effects_mat2$Estimate,
+  effects_mat2$Outcome!="Total Symptoms" ~ exp(effects_mat2$Estimate)
 )
 
 effects_mat2$label <- paste0(round(effects_mat2$estimate, digits=1), " (", round(effects_mat2$lower, digits = 1), ", ", round(effects_mat2$upper, digits = 1), ")")
