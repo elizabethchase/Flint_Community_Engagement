@@ -1,7 +1,7 @@
 ---
 title: "Manuscript 2: Child Health Outcomes"
 author: "Elizabeth Chase"
-date: "5/10/2021"
+date: "10/5/2021"
 output: pdf_document
 ---
 
@@ -22,6 +22,7 @@ library(kableExtra)
 library(logistf)
 library(ARTool)
 library(lme4)
+library(rstanarm)
 
 load("~/Desktop/Research/Jerel Flint/Analyses/child_long.RData")
 load("~/Desktop/Research/Jerel Flint/Analyses/adult_data_eliz.RData")
@@ -55,7 +56,7 @@ adult_clean_eliz$num_time_notice <- case_when(
 
 adult_clean_eliz$waterlinereplaced <- ifelse(adult_clean_eliz$water_line_status_after_april2014=="My lead/water lines were replaced", 1, ifelse(is.na(adult_clean_eliz$water_line_status_after_april2014), NA_real_, 0))
 
-subadult <- mutate(adult_clean_eliz, parbloodtestf = blood_test_after_april_2014, parbllf = elevated_lead_after_april_2014, parrashesf = rashes_after_april_2014, parhairf = hairloss_after_april_2014, parnausf = nausea_after_april_2014, parirrf = irritable_after_april_2014, parbloodtestc = getscreened, parbllc = elevated_collapse, parrashesc = rash_collapse, parhairc = hair_collapse, parnausc = nausea_collapse, parirrc = irritable_collapse, paroverall = overall_collapse) %>% select(inclusion, unique_id, age, gender, collapserace, collapseeduc, have_health_insurance, public_benefits, water_exaggerated, children_health_harmed, trust_government_in_future, drink_tap_in_three_years, satisfied_flint_government, satisfied_state_government, satisfied_federal_government, political_affiliation, nightmares, avoided_thinking_crisis, onguard_watchful, numb_detached, felt_guilty, ptsdscore, phq, parbloodtestf, parbllf, parrashesf, parhairf, parnausf, parirrf, parbloodtestc, parbllc, parrashesc, parhairc, parnausc, parirrc, paroverall, confidants2, number_children, employ_status, num_time_notice, watertestbinary, current_zip, waterlinereplaced)
+subadult <- mutate(adult_clean_eliz, parbloodtestf = blood_test_after_april_2014, parbllf = elevated_lead_after_april_2014, parrashesf = rashes_after_april_2014, parhairf = hairloss_after_april_2014, parnausf = nausea_after_april_2014, parirrf = irritable_after_april_2014, parbloodtestc = getscreened, parbllc = elevated_collapse, parrashesc = rash_collapse, parhairc = hair_collapse, parnausc = nausea_collapse, parirrc = irritable_collapse, paroverall = overall_collapse) %>% dplyr::select(inclusion, unique_id, age, gender, collapserace, collapseeduc, have_health_insurance, public_benefits, water_exaggerated, children_health_harmed, trust_government_in_future, drink_tap_in_three_years, satisfied_flint_government, satisfied_state_government, satisfied_federal_government, political_affiliation, nightmares, avoided_thinking_crisis, onguard_watchful, numb_detached, felt_guilty, ptsdscore, phq, parbloodtestf, parbllf, parrashesf, parhairf, parnausf, parirrf, parbloodtestc, parbllc, parrashesc, parhairc, parnausc, parirrc, paroverall, confidants2, number_children, employ_status, num_time_notice, watertestbinary, current_zip, waterlinereplaced)
 
 child_adult <- left_join(child_final, subadult, by=c("unique_id"))
 
@@ -69,32 +70,17 @@ samp2 <- nrow(child_adult)
 
 ##child_adult <- filter(child_adult, relationship == "Your child" | relationship == "Your grandchild")
 
-#child_adult$gettested <- ifelse(child_adult$blood_test_after_april_2014=="Yes" & child_adult$blood_test_before_april_2014=="No", 1, ifelse(is.na(child_adult$blood_test_after_april_2014) | is.na(child_adult$blood_test_before_april_2014), NA_real_, 0))
-
 child_adult$gettested <- ifelse(child_adult$blood_test_after_april_2014=="Yes", 1, ifelse(is.na(child_adult$blood_test_after_april_2014), NA_real_, 0))
-
-
-#child_adult$elevbll <- ifelse(child_adult$elevated_lead_after_april_2014=="Yes" & child_adult$elevated_lead_before_april_2014=="No", 1, ifelse(is.na(child_adult$elevated_lead_after_april_2014) | is.na(child_adult$elevated_lead_before_april_2014), NA_real_, 0))
 
 child_adult$elevbll <- ifelse(child_adult$elevated_lead_after_april_2014=="Yes", 1, ifelse(is.na(child_adult$elevated_lead_after_april_2014), NA_real_, 0))
 
-#child_adult$rash <- ifelse(child_adult$rash_after_april_2014=="Yes" & child_adult$rash_before_april_2014=="No", 1, ifelse(is.na(child_adult$rash_after_april_2014) | is.na(child_adult$rash_before_april_2014), NA_real_, 0))
-
 child_adult$rash <- ifelse(child_adult$rash_after_april_2014=="Yes", 1, ifelse(is.na(child_adult$rash_after_april_2014), NA_real_, 0))
-
-#child_adult$hair <- ifelse(child_adult$hairloss_after_april_2014=="Yes" & child_adult$hairloss_before_april_2014=="No", 1, ifelse(is.na(child_adult$hairloss_after_april_2014) | is.na(child_adult$hairloss_before_april_2014), NA_real_, 0))
 
 child_adult$hair <- ifelse(child_adult$hairloss_after_april_2014=="Yes", 1, ifelse(is.na(child_adult$hairloss_after_april_2014), NA_real_, 0))
 
-#child_adult$learn <- ifelse(child_adult$learning_after_april_2014=="Yes" & child_adult$learning_before_april_2014=="No", 1, ifelse(is.na(child_adult$learning_after_april_2014) | is.na(child_adult$learning_before_april_2014), NA_real_, 0))
-
 child_adult$learn <- ifelse(child_adult$learning_after_april_2014=="Yes", 1, ifelse(is.na(child_adult$learning_after_april_2014), NA_real_, 0))
 
-#child_adult$hyper <- ifelse(child_adult$hyper_after_april_2014=="Yes" & child_adult$hyper_before_april_2014=="No", 1, ifelse(is.na(child_adult$hyper_after_april_2014) | is.na(child_adult$hyper_before_april_2014), NA_real_, 0))
-
 child_adult$hyper <- ifelse(child_adult$hyper_after_april_2014=="Yes", 1, ifelse(is.na(child_adult$hyper_after_april_2014), NA_real_, 0))
-
-#child_adult$irritable <- ifelse(child_adult$irritable_after_april_2014=="Yes" & child_adult$irritable_before_april_2014=="No", 1, ifelse(is.na(child_adult$irritable_after_april_2014) | is.na(child_adult$irritable_before_april_2014), NA_real_, 0))
 
 child_adult$irritable <- ifelse(child_adult$irritable_after_april_2014=="Yes", 1, ifelse(is.na(child_adult$irritable_after_april_2014), NA_real_, 0))
 
@@ -102,7 +88,7 @@ child_adult$watersource2 <- ifelse(child_adult$watersource=="Bottled water", 1, 
 
 child_adult$employ_status2 <- ifelse(child_adult$employ_status=="Employed", "Employed", ifelse(child_adult$employ_status=="Unemployed", "Unemployed", ifelse(is.na(child_adult$employ_status), NA_character_, "Other")))
 
-symp_sub <- select(child_adult, gettested, elevbll, rash, hair, learn, hyper, irritable)
+symp_sub <- dplyr::select(child_adult, gettested, elevbll, rash, hair, learn, hyper, irritable)
 
 child_adult$overall_symp <- rowSums(symp_sub, na.rm=TRUE)
 
@@ -112,13 +98,15 @@ child_adult$racecollapse <- case_when(
   child_adult$reth=="White" ~ "White"
 )
 
-exam <- select(child_adult, child, unique_id, relationship, age.x, gender.x, public_benefits, gettested, elevbll, rash, hair, learn, hyper, irritable, overall_symp, racecollapse, blood_test_after_april_2014, water_exaggerated)
+exam <- dplyr::select(child_adult, child, unique_id, relationship, age.x, gender.x, public_benefits, gettested, elevbll, rash, hair, learn, hyper, irritable, overall_symp, racecollapse, blood_test_after_april_2014, water_exaggerated)
 
 child_adult2 <- child_adult[complete.cases(exam)]
 child_adult <- child_adult2
 ```
 
 ## Introductory Remarks
+
+Note: May 2021 
 
 This report was an attempt to respond to two key reviewer concerns: 1) the presence of children under age 5 in our data--and thus not alive in April 2014, when the water switch happened, and 2) what to do with children who were described by a caregiver who wasn't their parent or grandparent. 
 
@@ -127,6 +115,10 @@ I tried a number of things to figure out what to do with children under age 5. P
 I then looked a little more closely at the second inclusion criteria: children described by an aunt/uncle/babysitter/sibling, rather than a parent/grandparent. After investigating these children more closely, I concluded that we should keep them. They aren't significantly different from children described by a parent/grandparent, and including them in the sample doesn't affect the direction/magnitude of any associations, but it *does* increase our sample size enough to start seeing significant findings, because the larger sample size shrinks the standard errors.
 
 Therefore, I have concluded that our inclusion criteria will be children ages 6 months and up, considering outcomes based on just after April 2014 (and not before) described by any caregiver living in the City of Flint. 
+
+Note: Oct. 2021
+
+This analysis was redone using Bayesian models, in order to meet a reviewer request for models that would not converge using REML. This allows us to address the issues with small sample size and separation in the data.
 
 \newpage
 
@@ -269,7 +261,7 @@ kable(print(table_outcome_nostrat, contDigits=1, varLabel = T, printToggle=FALSE
 
 \newpage
 
-## Multivariable modeling results
+## Multivariable modeling results (normal priors)
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 #For water source:
@@ -278,119 +270,286 @@ child_adult$pubben <- ifelse(child_adult$public_benefits=="Yes", 1, ifelse(is.na
 child_adult$bottledwater <- ifelse(child_adult$watersource=="Bottled water", 1, ifelse(is.na(child_adult$watersource), NA_real_, 0))
 child_adult$employcollapse <- ifelse(child_adult$employ_status=="Employed", "Employed", ifelse(child_adult$employ_status=="Unemployed", "Unemployed", ifelse(is.na(child_adult$employ_status), NA_character_, "Other")))
 
-##watersource_model <- glmer(bottledwater ~ gender.x + age.x + racecollapse + pubben + (1 | unique_id), data = child_adult, family = "binomial") ##issues with convergence; did not include
+watersource_model <- stan_glmer(bottledwater ~ gender.x + age.x + racecollapse + pubben + water_exaggeratedbinary + gettested + elevbll + (1 | unique_id),
+                               data = child_adult, 
+                               family = "binomial", seed = 12) 
 
-##summary(watersource_model)
+mysum <- summary(watersource_model, pars = c("(Intercept)", "gender.xMale", "age.x", "racecollapseOther", "racecollapseWhite", "pubben", "water_exaggeratedbinary", "gettestedYes", "elevbllYes", "Sigma[unique_id:(Intercept),(Intercept)]"), probs = c(0.025, 0.5, 0.975), digits = 2)
+
+mysum
+
+effects_mat <- data.frame("Outcome" = rep("Child drinks bottled water", 8), "Variable" = c("Male gender (ref: Female gender)", "Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Receives public benefits (ref: No benefits)", "Water crisis was exaggerated (ref: Crisis not exaggerated)", "Child screened for BLLs (ref: Child not screened)", "Child diagnosed with elevated BLLs (ref: Child had normal BLLs)"), "Estimate" = mysum[2:9, 5], "Lower" = mysum[2:9, 4], "Upper" = mysum[2:9, 6])
 
 #For getting tested:
-tested_model_noadult <- glmer(gettested ~ gender.x + age.x + racecollapse + pubben + (1 | unique_id), data = child_adult, family = "binomial")
-tested_model_adult <- glmer(gettested ~ gender.x + age.x + racecollapse + pubben + water_exaggeratedbinary + (1 | unique_id), data = child_adult, family = "binomial")
+tested_model <- stan_glmer(gettested ~ gender.x + age.x + racecollapse + pubben + water_exaggeratedbinary + (1 | unique_id), data = child_adult, family = "binomial", seed = 13)
 
-summary(tested_model_noadult)
-summary(tested_model_adult)
+mysum <- summary(tested_model, pars = c("(Intercept)", "gender.xMale", "age.x", "racecollapseOther", "racecollapseWhite", "pubben", "water_exaggeratedbinary", "Sigma[unique_id:(Intercept),(Intercept)]"), probs = c(0.025, 0.5, 0.975), digits = 2)
 
-effects_mat <- data.frame("Outcome" = rep("Get tested", 6), "Variable" = c("Male gender (ref: Female gender)", "Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Receives public benefits (ref: No benefits)", "Water crisis was exaggerated (ref: Crisis not exaggerated)"), "Estimate" = c(summary(tested_model_noadult)$coefficients[-1,1], summary(tested_model_adult)$coefficients[7,1]), "StErr" = c(summary(tested_model_noadult)$coefficients[-1,2], summary(tested_model_adult)$coefficients[7,2]), "Pvalue" = c(summary(tested_model_noadult)$coefficients[-1,4], summary(tested_model_adult)$coefficients[7,4]))
+mysum
 
-#For having elevated BLLs:
-#bll_model_noadult <- glmer(elevbll ~ gender.x + age.x + racecollapse + pubben + (1 | unique_id), data = child_adult, family = "binomial")
-#bll_model_adult <- glmer(elevbll ~ gender.x + scale(age.x) + racecollapse + pubben + as.numeric(blood_test_after_april_2014=="Yes") + (1 | unique_id), data = child_adult, family = "binomial") # Not included due to convergence issues
-
-#summary(bll_model_noadult)
-#summary(bll_model_adult)
-  
-#subdat <- data.frame("Outcome" = rep("Elevated BLLs", 5), "Variable" = c("Gender", "Age", "Race-Other", "Race-White", "Public Benefits"), "Estimate" = c(summary(bll_model_noadult)$coefficients[-1,1]), "StErr" = c(summary(bll_model_noadult)$coefficients[-1,2]), "Pvalue" = c(summary(bll_model_noadult)$coefficients[-1,4]))
-
-#effects_mat <- rbind(effects_mat, subdat)
-
-#For having rashes:
-rash_model_noadult <- glmer(rash ~ gender.x + age.x + racecollapse + pubben + (1 | unique_id), data = child_adult, family = "binomial")
-summary(rash_model_noadult)
-rash_model_adult <- glmer(rash ~ gender.x + age.x + racecollapse + pubben + as.numeric(blood_test_after_april_2014=="Yes") + (1 | unique_id), data = child_adult, family = "binomial")
-summary(rash_model_adult)
-
-subdat <- data.frame("Outcome" = rep("Rashes", 6), "Variable" = c("Male gender (ref: Female gender)", "Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Receives public benefits (ref: No benefits)", "Child screened for BLLs (ref: Child not screened for BLLs"), "Estimate" = c(summary(rash_model_noadult)$coefficients[-1,1], summary(rash_model_adult)$coefficients[7,1]), "StErr" = c(summary(rash_model_noadult)$coefficients[-1,2], summary(rash_model_adult)$coefficients[7,2]), "Pvalue" = c(summary(rash_model_noadult)$coefficients[-1,4], summary(rash_model_adult)$coefficients[7,4]))
+subdat <- data.frame("Outcome" = rep("Get tested", 6), "Variable" = c("Male gender (ref: Female gender)", "Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Receives public benefits (ref: No benefits)", "Water crisis was exaggerated (ref: Crisis not exaggerated)"), "Estimate" = mysum[2:7, 5], "Lower" = mysum[2:7, 4], "Upper" = mysum[2:7, 6])
 
 effects_mat <- rbind(effects_mat, subdat)
 
-#For having hair loss:
-#hair_model_noadult <- glmer(hair ~ gender.x + scale(age.x) + racecollapse + pubben + (1 | unique_id), data = child_adult, family = "binomial") ## convergence issues; did not include
-#summary(hair_model_noadult)
-#hair_model_adult <- glmer(hair ~ gender.x + scale(age.x) + racecollapse + pubben + as.numeric(blood_test_after_april_2014=="Yes") + (1 | unique_id), data = child_adult, family = "binomial") ## convergence issues; did not include
-#summary(hair_model_adult)
+#For having elevated BLLs (restricting to children who were screened):
+bll_model <- stan_glmer(elevbll ~ gender.x + age.x + racecollapse + pubben + water_exaggeratedbinary + (1 | unique_id), data = filter(child_adult, gettested=="Yes"), family = "binomial", seed = 14) 
 
-#subdat <- data.frame("Outcome" = rep("Hairloss", 6), "Variable" = c("Male gender (ref: Female gender)", "Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Receives public benefits (ref: No benefits)", "Child screened for BLLs (ref: Child not screened for BLLs"), "Estimate" = c(summary(hair_model_noadult)$coefficients[-1,1], summary(hair_model_adult)$coefficients[7,1]), "StErr" = c(summary(hair_model_noadult)$coefficients[-1,2], summary(hair_model_adult)$coefficients[7,2]), "Pvalue" = c(summary(hair_model_noadult)$coefficients[-1,4], summary(hair_model_adult)$coefficients[7,4]))
+mysum <- summary(bll_model, pars = c("(Intercept)", "gender.xMale", "age.x", "racecollapseOther", "racecollapseWhite", "pubben", "water_exaggeratedbinary", "Sigma[unique_id:(Intercept),(Intercept)]"), probs = c(0.025, 0.5, 0.975), digits = 2)
 
-#effects_mat <- rbind(effects_mat, subdat)
+mysum
+
+subdat <- data.frame("Outcome" = rep("Elevated BLLs", 6), "Variable" = c("Male gender (ref: Female gender)", "Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Receives public benefits (ref: No benefits)", "Water crisis was exaggerated (ref: Crisis not exaggerated)"), "Estimate" = mysum[2:7, 5], "Lower" = mysum[2:7, 4], "Upper" = mysum[2:7, 6])
+
+effects_mat <- rbind(effects_mat, subdat)
+
+#For having rashes:
+rash_model <- stan_glmer(rash ~ gender.x + age.x + racecollapse + pubben + water_exaggeratedbinary + gettested  + elevbll + (1 | unique_id), data = child_adult, family = "binomial", seed = 15)
+
+mysum <- summary(rash_model, pars = c("(Intercept)", "gender.xMale", "age.x", "racecollapseOther", "racecollapseWhite", "pubben", "water_exaggeratedbinary", "gettestedYes", "elevbllYes", "Sigma[unique_id:(Intercept),(Intercept)]"), probs = c(0.025, 0.5, 0.975), digits = 2)
+
+mysum
+
+subdat <- data.frame("Outcome" = rep("Rashes", 8), "Variable" = c("Male gender (ref: Female gender)", "Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Receives public benefits (ref: No benefits)", "Water crisis was exaggerated (ref: Crisis not exaggerated)", "Child screened for BLLs (ref: Child not screened)", "Child diagnosed with elevated BLLs (ref: Child had normal BLLs)"), "Estimate" = mysum[2:9, 5], "Lower" = mysum[2:9, 4], "Upper" = mysum[2:9, 6])
+
+effects_mat <- rbind(effects_mat, subdat)
+
+#For having hair loss
+hair_model <- stan_glmer(hair ~ gender.x + age.x + racecollapse + pubben + water_exaggeratedbinary + gettested + elevbll + (1 | unique_id), data = child_adult, family = "binomial", seed = 16) 
+
+mysum <- summary(hair_model, pars = c("(Intercept)", "gender.xMale", "age.x", "racecollapseOther", "racecollapseWhite", "pubben", "water_exaggeratedbinary", "gettestedYes", "elevbllYes", "Sigma[unique_id:(Intercept),(Intercept)]"), probs = c(0.025, 0.5, 0.975), digits = 2)
+
+mysum
+
+subdat <- data.frame("Outcome" = rep("Hair loss", 8), "Variable" = c("Male gender (ref: Female gender)", "Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Receives public benefits (ref: No benefits)", "Water crisis was exaggerated (ref: Crisis not exaggerated)", "Child screened for BLLs (ref: Child not screened)", "Child diagnosed with elevated BLLs (ref: Child had normal BLLs)"), "Estimate" = mysum[2:9, 5], "Lower" = mysum[2:9, 4], "Upper" = mysum[2:9, 6])
+
+effects_mat <- rbind(effects_mat, subdat)
 
 #For having learning delays:
-learn_model_noadult <- glmer(learn ~ gender.x + age.x + racecollapse + pubben + (1 | unique_id), data = child_adult, family = "binomial")
-summary(learn_model_noadult)
+learn_model <- stan_glmer(learn ~ gender.x + age.x + racecollapse + pubben + water_exaggeratedbinary + gettested + elevbll + (1 | unique_id), data = child_adult, family = "binomial", seed = 17)
 
-learn_model_layer2 <- glmer(learn ~ gender.x + age.x + racecollapse + pubben + as.numeric(blood_test_after_april_2014=="Yes") + (1 | unique_id), data = child_adult, family = "binomial")
-summary(learn_model_layer2)
+mysum <- summary(learn_model, pars = c("(Intercept)", "gender.xMale", "age.x", "racecollapseOther", "racecollapseWhite", "pubben", "water_exaggeratedbinary", "gettestedYes", "elevbllYes", "Sigma[unique_id:(Intercept),(Intercept)]"), probs = c(0.025, 0.5, 0.975), digits = 2)
 
-subdat <- data.frame("Outcome" = rep("Learning Delays", 6), "Variable" = c("Male gender (ref: Female gender)", "Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Receives public benefits (ref: No benefits)", "Child screened for BLLs (ref: Child not screened for BLLs"), "Estimate" = c(summary(learn_model_noadult)$coefficients[-1,1], summary(learn_model_layer2)$coefficients[7,1]), "StErr" = c(summary(learn_model_noadult)$coefficients[-1,2], summary(learn_model_layer2)$coefficients[7,2]), "Pvalue" = c(summary(learn_model_noadult)$coefficients[-1,4], summary(learn_model_layer2)$coefficients[7,4]))
+mysum
+
+subdat <- data.frame("Outcome" = rep("Learning delays", 8), "Variable" = c("Male gender (ref: Female gender)", "Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Receives public benefits (ref: No benefits)", "Water crisis was exaggerated (ref: Crisis not exaggerated)", "Child screened for BLLs (ref: Child not screened)", "Child diagnosed with elevated BLLs (ref: Child had normal BLLs)"), "Estimate" = mysum[2:9, 5], "Lower" = mysum[2:9, 4], "Upper" = mysum[2:9, 6])
 
 effects_mat <- rbind(effects_mat, subdat)
 
 #For having hyperactivity:
-hyper_model_noadult <- glmer(hyper ~ gender.x + scale(age.x) + racecollapse + pubben + (1 | unique_id), data = child_adult, family = "binomial")
-summary(hyper_model_noadult)
+hyper_model <- stan_glmer(hyper ~ gender.x + age.x + racecollapse + pubben + water_exaggeratedbinary + gettested + elevbll + (1 | unique_id), data = child_adult, family = "binomial", seed = 18)
 
-hyper_model_layer2 <- glmer(hyper ~ gender.x + age.x + racecollapse + pubben + as.numeric(blood_test_after_april_2014=="Yes") + (1 | unique_id), data = child_adult, family = "binomial")
-summary(hyper_model_layer2)
+mysum <- summary(hyper_model, pars = c("(Intercept)", "gender.xMale", "age.x", "racecollapseOther", "racecollapseWhite", "pubben", "water_exaggeratedbinary", "gettestedYes", "elevbllYes", "Sigma[unique_id:(Intercept),(Intercept)]"), probs = c(0.025, 0.5, 0.975), digits = 2)
 
-subdat <- data.frame("Outcome" = rep("Hyperactivity", 6), "Variable" = c("Male gender (ref: Female gender)", "Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Receives public benefits (ref: No benefits)", "Child screened for BLLs (ref: Child not screened for BLLs"), "Estimate" = c(summary(hyper_model_noadult)$coefficients[-1,1], summary(hyper_model_layer2)$coefficients[7,1]), "StErr" = c(summary(hyper_model_noadult)$coefficients[-1,2], summary(hyper_model_layer2)$coefficients[7,2]), "Pvalue" = c(summary(hyper_model_noadult)$coefficients[-1,4], summary(hyper_model_layer2)$coefficients[7,4]))
+mysum
+
+subdat <- data.frame("Outcome" = rep("Hyperactivity", 8), "Variable" = c("Male gender (ref: Female gender)", "Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Receives public benefits (ref: No benefits)", "Water crisis was exaggerated (ref: Crisis not exaggerated)", "Child screened for BLLs (ref: Child not screened)", "Child diagnosed with elevated BLLs (ref: Child had normal BLLs)"), "Estimate" = mysum[2:9, 5], "Lower" = mysum[2:9, 4], "Upper" = mysum[2:9, 6])
 
 effects_mat <- rbind(effects_mat, subdat)
 
 #For having irritability:
-irr_model_noadult <- glmer(irritable ~ gender.x + age.x + racecollapse + pubben + (1 | unique_id), data = child_adult, family = "binomial")
-summary(irr_model_noadult)
-irr_model_adult <- glmer(irritable ~ gender.x + age.x + racecollapse + pubben + as.numeric(blood_test_after_april_2014=="Yes") + (1 | unique_id), data = child_adult, family = "binomial")
-summary(irr_model_adult)
+irr_model <- stan_glmer(irritable ~ gender.x + age.x + racecollapse + pubben + water_exaggeratedbinary + gettested + elevbll + (1 | unique_id), data = child_adult, family = "binomial", seed = 19)
 
-subdat <- data.frame("Outcome" = rep("Irritability", 6), "Variable" = c("Male gender (ref: Female gender)", "Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Receives public benefits (ref: No benefits)", "Child screened for BLLs (ref: Child not screened for BLLs"), "Estimate" = c(summary(irr_model_noadult)$coefficients[-1,1], summary(irr_model_adult)$coefficients[7,1]), "StErr" = c(summary(irr_model_noadult)$coefficients[-1,2], summary(irr_model_adult)$coefficients[7,2]), "Pvalue" = c(summary(irr_model_noadult)$coefficients[-1,4], summary(irr_model_adult)$coefficients[7,4]))
+mysum <- summary(irr_model, pars = c("(Intercept)", "gender.xMale", "age.x", "racecollapseOther", "racecollapseWhite", "pubben", "water_exaggeratedbinary", "gettestedYes", "elevbllYes", "Sigma[unique_id:(Intercept),(Intercept)]"), probs = c(0.025, 0.5, 0.975), digits = 2)
+
+mysum
+
+subdat <- data.frame("Outcome" = rep("Irritability", 8), "Variable" = c("Male gender (ref: Female gender)", "Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Receives public benefits (ref: No benefits)", "Water crisis was exaggerated (ref: Crisis not exaggerated)", "Child screened for BLLs (ref: Child not screened)", "Child diagnosed with elevated BLLs (ref: Child had normal BLLs)"), "Estimate" = mysum[2:9, 5], "Lower" = mysum[2:9, 4], "Upper" = mysum[2:9, 6])
 
 effects_mat <- rbind(effects_mat, subdat)
 
 #For overall symptoms:
-overall_model_noadult <- lmer(overall_symp ~ gender.x + age.x + racecollapse + pubben + (1 | unique_id), data = child_adult)
-summary(overall_model_noadult)
+overall_model <- stan_lmer(overall_symp ~ gender.x + age.x + racecollapse + pubben + water_exaggeratedbinary + gettested + elevbll + (1 | unique_id), data = child_adult, seed = 20)
 
-overall_model_adult <- lmer(overall_symp ~ gender.x + age.x + racecollapse + pubben + as.numeric(blood_test_after_april_2014=="Yes") + water_exaggeratedbinary + (1 | unique_id), data = child_adult)
-summary(overall_model_adult)
+mysum <- summary(overall_model, pars = c("(Intercept)", "gender.xMale", "age.x", "racecollapseOther", "racecollapseWhite", "pubben", "water_exaggeratedbinary", "gettestedYes", "elevbllYes", "Sigma[unique_id:(Intercept),(Intercept)]"), probs = c(0.025, 0.5, 0.975), digits = 2)
 
-subdat <- data.frame("Outcome" = rep("Overall Symptoms", 7), "Variable" = c("Male gender (ref: Female gender)", "Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Receives public benefits (ref: No benefits)", "Child screened for BLLs (ref: Child not screened for BLLs)", "Water crisis was exaggerated (ref: Crisis not exaggerated)"), "Estimate" = c(summary(overall_model_noadult)$coefficients[-1,1], summary(overall_model_adult)$coefficients[7:8,1]), "StErr" = c(summary(overall_model_noadult)$coefficients[-1,2], summary(overall_model_adult)$coefficients[7:8,2]), "Pvalue" = pnorm(c(summary(overall_model_noadult)$coefficients[-1,3], summary(overall_model_adult)$coefficients[7:8,3]), lower.tail = FALSE))
+mysum
+
+subdat <- data.frame("Outcome" = rep("Total Symptoms", 8), "Variable" = c("Male gender (ref: Female gender)", "Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Receives public benefits (ref: No benefits)", "Water crisis was exaggerated (ref: Crisis not exaggerated)", "Child screened for BLLs (ref: Child not screened)", "Child diagnosed with elevated BLLs (ref: Child had normal BLLs)"), "Estimate" = mysum[2:9, 5], "Lower" = mysum[2:9, 4], "Upper" = mysum[2:9, 6])
 
 effects_mat <- rbind(effects_mat, subdat)
 ```
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
-effects_mat$BHpvalue <- p.adjust(effects_mat$Pvalue, method="BH")
 
 effects_mat$lower <- case_when(
-  effects_mat$Outcome=="Overall Symptoms" ~ effects_mat$Estimate - 1.96*effects_mat$StErr,
-  effects_mat$Outcome!="Overall Symptoms" ~ exp(effects_mat$Estimate - 1.96*effects_mat$StErr)
+  effects_mat$Outcome=="Overall Symptoms" ~ effects_mat$Lower,
+  effects_mat$Outcome!="Overall Symptoms" ~ exp(effects_mat$Lower)
 )
 
 effects_mat$upper <- case_when(
-  effects_mat$Outcome=="Overall Symptoms" ~ effects_mat$Estimate + 1.96*effects_mat$StErr,
-  effects_mat$Outcome!="Overall Symptoms" ~ exp(effects_mat$Estimate + 1.96*effects_mat$StErr)
+  effects_mat$Outcome=="Overall Symptoms" ~ effects_mat$Upper,
+  effects_mat$Outcome!="Overall Symptoms" ~ exp(effects_mat$Upper)
 )
 
-effects_mat$effect <- case_when(
+effects_mat$estimate <- case_when(
   effects_mat$Outcome=="Overall Symptoms" ~ effects_mat$Estimate,
   effects_mat$Outcome!="Overall Symptoms" ~ exp(effects_mat$Estimate)
 )
 
-effects_mat$label <- paste0(round(effects_mat$effect, digits=1), " (", round(effects_mat$lower, digits = 1), ", ", round(effects_mat$upper, digits = 1), ")")
+effects_mat$label <- paste0(round(effects_mat$estimate, digits=1), " (", round(effects_mat$lower, digits = 1), ", ", round(effects_mat$upper, digits = 1), ")")
 
-pretty_effects <- select(effects_mat, Outcome, Variable, label, BHpvalue)
-pretty_effects$BHpvalue <- round(pretty_effects$BHpvalue, 3)
+pretty_effects <- dplyr::select(effects_mat, Outcome, Variable, label)
 rownames(pretty_effects) <- NULL
 
-kable(pretty_effects, col.names = c("Outcome", "Predictor", "Odds Ratio (95% CI)", "P-value"))
+kable(pretty_effects, col.names = c("Outcome", "Predictor", "Odds Ratio (95% CI)"))
 ```
 
-Note that these modeling results doesn't include one important outcomes: child water source. I was unable to get this model to fit stably because of the small number of children not drinking bottled water. In addition, I couldn't consider the effect of the caregiver believing the water crisis was exaggerated on most of the outcomes because of convergence issues, and similarly with the relationship between the child being tested and the child having elevated BLLs.
+## Multivariable modeling results (Cauchy priors for additional regularization)
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+#For water source:
+child_adult$water_exaggeratedbinary <- as.numeric(child_adult$water_exaggerated=="Agree" | child_adult$water_exaggerated=="Strongly Agree")
+child_adult$pubben <- ifelse(child_adult$public_benefits=="Yes", 1, ifelse(is.na(child_adult$public_benefits), NA_real_, 0))
+child_adult$bottledwater <- ifelse(child_adult$watersource=="Bottled water", 1, ifelse(is.na(child_adult$watersource), NA_real_, 0))
+child_adult$employcollapse <- ifelse(child_adult$employ_status=="Employed", "Employed", ifelse(child_adult$employ_status=="Unemployed", "Unemployed", ifelse(is.na(child_adult$employ_status), NA_character_, "Other")))
+
+watersource_model2 <- stan_glmer(bottledwater ~ gender.x + age.x + racecollapse + pubben + water_exaggeratedbinary + gettested + elevbll + (1 | unique_id),
+                               data = child_adult, 
+                               family = "binomial", seed = 21,
+                               prior = cauchy(location = 0,
+                                              scale = 2.5,
+                                              autoscale = TRUE)) 
+
+mysum <- summary(watersource_model2, pars = c("(Intercept)", "gender.xMale", "age.x", "racecollapseOther", "racecollapseWhite", "pubben", "water_exaggeratedbinary", "gettestedYes", "elevbllYes", "Sigma[unique_id:(Intercept),(Intercept)]"), probs = c(0.025, 0.5, 0.975), digits = 2)
+
+mysum
+
+effects_mat2 <- data.frame("Outcome" = rep("Child drinks bottled water", 8), "Variable" = c("Male gender (ref: Female gender)", "Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Receives public benefits (ref: No benefits)", "Water crisis was exaggerated (ref: Crisis not exaggerated)", "Child screened for BLLs (ref: Child not screened)", "Child diagnosed with elevated BLLs (ref: Child had normal BLLs)"), "Estimate" = mysum[2:9, 5], "Lower" = mysum[2:9, 4], "Upper" = mysum[2:9, 6])
+
+#For getting tested:
+tested_model2 <- stan_glmer(gettested ~ gender.x + age.x + racecollapse + pubben + water_exaggeratedbinary + (1 | unique_id), data = child_adult, family = "binomial", seed = 22,
+                               prior = cauchy(location = 0,
+                                              scale = 2.5,
+                                              autoscale = TRUE))
+
+mysum <- summary(tested_model2, pars = c("(Intercept)", "gender.xMale", "age.x", "racecollapseOther", "racecollapseWhite", "pubben", "water_exaggeratedbinary", "Sigma[unique_id:(Intercept),(Intercept)]"), probs = c(0.025, 0.5, 0.975), digits = 2)
+
+mysum
+
+subdat <- data.frame("Outcome" = rep("Get tested", 6), "Variable" = c("Male gender (ref: Female gender)", "Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Receives public benefits (ref: No benefits)", "Water crisis was exaggerated (ref: Crisis not exaggerated)"), "Estimate" = mysum[2:7, 5], "Lower" = mysum[2:7, 4], "Upper" = mysum[2:7, 6])
+
+effects_mat2 <- rbind(effects_mat2, subdat)
+
+#For having elevated BLLs (restricting to children who got screened):
+bll_model2 <- stan_glmer(elevbll ~ gender.x + age.x + racecollapse + pubben + water_exaggeratedbinary + (1 | unique_id), data = filter(child_adult, gettested=="Yes"), family = "binomial", seed = 23,
+                               prior = cauchy(location = 0,
+                                              scale = 2.5,
+                                              autoscale = TRUE)) 
+
+mysum <- summary(bll_model2, pars = c("(Intercept)", "gender.xMale", "age.x", "racecollapseOther", "racecollapseWhite", "pubben", "water_exaggeratedbinary", "Sigma[unique_id:(Intercept),(Intercept)]"), probs = c(0.025, 0.5, 0.975), digits = 2)
+
+mysum
+
+subdat <- data.frame("Outcome" = rep("Elevated BLLs", 6), "Variable" = c("Male gender (ref: Female gender)", "Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Receives public benefits (ref: No benefits)", "Water crisis was exaggerated (ref: Crisis not exaggerated)"), "Estimate" = mysum[2:7, 5], "Lower" = mysum[2:7, 4], "Upper" = mysum[2:7, 6])
+
+effects_mat2 <- rbind(effects_mat2, subdat)
+
+#For having rashes:
+rash_model2 <- stan_glmer(rash ~ gender.x + age.x + racecollapse + pubben + water_exaggeratedbinary + gettested  + elevbll + (1 | unique_id), data = child_adult, family = "binomial", seed = 24,
+                               prior = cauchy(location = 0,
+                                              scale = 2.5,
+                                              autoscale = TRUE))
+
+mysum <- summary(rash_model2, pars = c("(Intercept)", "gender.xMale", "age.x", "racecollapseOther", "racecollapseWhite", "pubben", "water_exaggeratedbinary", "gettestedYes", "elevbllYes", "Sigma[unique_id:(Intercept),(Intercept)]"), probs = c(0.025, 0.5, 0.975), digits = 2)
+
+mysum
+
+subdat <- data.frame("Outcome" = rep("Rashes", 8), "Variable" = c("Male gender (ref: Female gender)", "Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Receives public benefits (ref: No benefits)", "Water crisis was exaggerated (ref: Crisis not exaggerated)", "Child screened for BLLs (ref: Child not screened)", "Child diagnosed with elevated BLLs (ref: Child had normal BLLs)"), "Estimate" = mysum[2:9, 5], "Lower" = mysum[2:9, 4], "Upper" = mysum[2:9, 6])
+
+effects_mat2 <- rbind(effects_mat2, subdat)
+
+#For having hair loss
+hair_model2 <- stan_glmer(hair ~ gender.x + age.x + racecollapse + pubben + water_exaggeratedbinary + gettested + elevbll + (1 | unique_id), data = child_adult, family = "binomial", seed = 25,
+                               prior = cauchy(location = 0,
+                                              scale = 2.5,
+                                              autoscale = TRUE)) 
+
+mysum <- summary(hair_model2, pars = c("(Intercept)", "gender.xMale", "age.x", "racecollapseOther", "racecollapseWhite", "pubben", "water_exaggeratedbinary", "gettestedYes", "elevbllYes", "Sigma[unique_id:(Intercept),(Intercept)]"), probs = c(0.025, 0.5, 0.975), digits = 2)
+
+mysum
+
+subdat <- data.frame("Outcome" = rep("Hair loss", 8), "Variable" = c("Male gender (ref: Female gender)", "Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Receives public benefits (ref: No benefits)", "Water crisis was exaggerated (ref: Crisis not exaggerated)", "Child screened for BLLs (ref: Child not screened)", "Child diagnosed with elevated BLLs (ref: Child had normal BLLs)"), "Estimate" = mysum[2:9, 5], "Lower" = mysum[2:9, 4], "Upper" = mysum[2:9, 6])
+
+effects_mat2 <- rbind(effects_mat2, subdat)
+
+#For having learning delays:
+learn_model2 <- stan_glmer(learn ~ gender.x + age.x + racecollapse + pubben + water_exaggeratedbinary + gettested + elevbll + (1 | unique_id), data = child_adult, family = "binomial", seed = 26,
+                               prior = cauchy(location = 0,
+                                              scale = 2.5,
+                                              autoscale = TRUE))
+
+mysum <- summary(learn_model2, pars = c("(Intercept)", "gender.xMale", "age.x", "racecollapseOther", "racecollapseWhite", "pubben", "water_exaggeratedbinary", "gettestedYes", "elevbllYes", "Sigma[unique_id:(Intercept),(Intercept)]"), probs = c(0.025, 0.5, 0.975), digits = 2)
+
+mysum
+
+subdat <- data.frame("Outcome" = rep("Learning delays", 8), "Variable" = c("Male gender (ref: Female gender)", "Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Receives public benefits (ref: No benefits)", "Water crisis was exaggerated (ref: Crisis not exaggerated)", "Child screened for BLLs (ref: Child not screened)", "Child diagnosed with elevated BLLs (ref: Child had normal BLLs)"), "Estimate" = mysum[2:9, 5], "Lower" = mysum[2:9, 4], "Upper" = mysum[2:9, 6])
+
+effects_mat2 <- rbind(effects_mat2, subdat)
+
+#For having hyperactivity:
+hyper_model2 <- stan_glmer(hyper ~ gender.x + age.x + racecollapse + pubben + water_exaggeratedbinary + gettested + elevbll + (1 | unique_id), data = child_adult, family = "binomial", seed = 27,
+                               prior = cauchy(location = 0,
+                                              scale = 2.5,
+                                              autoscale = TRUE))
+
+mysum <- summary(hyper_model2, pars = c("(Intercept)", "gender.xMale", "age.x", "racecollapseOther", "racecollapseWhite", "pubben", "water_exaggeratedbinary", "gettestedYes", "elevbllYes", "Sigma[unique_id:(Intercept),(Intercept)]"), probs = c(0.025, 0.5, 0.975), digits = 2)
+
+mysum
+
+subdat <- data.frame("Outcome" = rep("Hyperactivity", 8), "Variable" = c("Male gender (ref: Female gender)", "Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Receives public benefits (ref: No benefits)", "Water crisis was exaggerated (ref: Crisis not exaggerated)", "Child screened for BLLs (ref: Child not screened)", "Child diagnosed with elevated BLLs (ref: Child had normal BLLs)"), "Estimate" = mysum[2:9, 5], "Lower" = mysum[2:9, 4], "Upper" = mysum[2:9, 6])
+
+effects_mat2 <- rbind(effects_mat2, subdat)
+
+#For having irritability:
+irr_model2 <- stan_glmer(irritable ~ gender.x + age.x + racecollapse + pubben + water_exaggeratedbinary + gettested + elevbll + (1 | unique_id), data = child_adult, family = "binomial", seed = 28,
+                               prior = cauchy(location = 0,
+                                              scale = 2.5,
+                                              autoscale = TRUE))
+
+mysum <- summary(irr_model2, pars = c("(Intercept)", "gender.xMale", "age.x", "racecollapseOther", "racecollapseWhite", "pubben", "water_exaggeratedbinary", "gettestedYes", "elevbllYes", "Sigma[unique_id:(Intercept),(Intercept)]"), probs = c(0.025, 0.5, 0.975), digits = 2)
+
+mysum
+
+subdat <- data.frame("Outcome" = rep("Irritability", 8), "Variable" = c("Male gender (ref: Female gender)", "Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Receives public benefits (ref: No benefits)", "Water crisis was exaggerated (ref: Crisis not exaggerated)", "Child screened for BLLs (ref: Child not screened)", "Child diagnosed with elevated BLLs (ref: Child had normal BLLs)"), "Estimate" = mysum[2:9, 5], "Lower" = mysum[2:9, 4], "Upper" = mysum[2:9, 6])
+
+effects_mat2 <- rbind(effects_mat2, subdat)
+
+#For overall symptoms:
+overall_model2 <- stan_lmer(overall_symp ~ gender.x + age.x + racecollapse + pubben + water_exaggeratedbinary + gettested + elevbll + (1 | unique_id), data = child_adult, seed = 29,
+                               prior = cauchy(location = 0,
+                                              scale = 2.5,
+                                              autoscale = TRUE))
+
+mysum <- summary(overall_model2, pars = c("(Intercept)", "gender.xMale", "age.x", "racecollapseOther", "racecollapseWhite", "pubben", "water_exaggeratedbinary", "gettestedYes", "elevbllYes", "Sigma[unique_id:(Intercept),(Intercept)]"), probs = c(0.025, 0.5, 0.975), digits = 2)
+
+mysum
+
+subdat <- data.frame("Outcome" = rep("Total Symptoms", 8), "Variable" = c("Male gender (ref: Female gender)", "Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Receives public benefits (ref: No benefits)", "Water crisis was exaggerated (ref: Crisis not exaggerated)", "Child screened for BLLs (ref: Child not screened)", "Child diagnosed with elevated BLLs (ref: Child had normal BLLs)"), "Estimate" = mysum[2:9, 5], "Lower" = mysum[2:9, 4], "Upper" = mysum[2:9, 6])
+
+effects_mat2 <- rbind(effects_mat2, subdat)
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+effects_mat2$lower <- case_when(
+  effects_mat2$Outcome=="Overall Symptoms" ~ effects_mat2$Lower,
+  effects_mat2$Outcome!="Overall Symptoms" ~ exp(effects_mat2$Lower)
+)
+
+effects_mat2$upper <- case_when(
+  effects_mat2$Outcome=="Overall Symptoms" ~ effects_mat2$Upper,
+  effects_mat2$Outcome!="Overall Symptoms" ~ exp(effects_mat2$Upper)
+)
+
+effects_mat2$estimate <- case_when(
+  effects_mat2$Outcome=="Overall Symptoms" ~ effects_mat2$Estimate,
+  effects_mat2$Outcome!="Overall Symptoms" ~ exp(effects_mat2$Estimate)
+)
+
+effects_mat2$label <- paste0(round(effects_mat2$estimate, digits=1), " (", round(effects_mat2$lower, digits = 1), ", ", round(effects_mat2$upper, digits = 1), ")")
+
+pretty_effects2 <- dplyr::select(effects_mat2, Outcome, Variable, label)
+rownames(pretty_effects2) <- NULL
+
+kable(pretty_effects2, col.names = c("Outcome", "Predictor", "Odds Ratio (95% CI)"))
+```
