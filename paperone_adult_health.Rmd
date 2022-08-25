@@ -142,22 +142,6 @@ popmap <- ggplot(data=flintdat2) + geom_sf(data=flintdat2, aes(geometry = geomet
 popmap
 
 ggsave(filename = "~/Desktop/Research/Jerel Flint/Publications/Paper 1 - Adult Health/mymap.pdf", plot = popmap, width = 8, height = 8)
-
-#table_predictors <- CreateTableOne(vars=c("age", "gender", "collapseeduc", "public_benefits", "collapsemarital", "number_children", "years_cityflint", "confidants2"), strata = "collapserace", data=mydata, includeNA = TRUE, argsNormal = list(NULL), argsNonNormal = list(var.equal = TRUE))
-
-#table_outcomes <- CreateTableOne(vars=c("num_time_notice", "blood_test_after_april_2014", "elevated_lead_after_april_2014", "rashes_after_april_2014", "hairloss_after_april_2014", "nausea_after_april_2014", "irritable_after_april_2014", "overall_collapse", "ptsd_bin", "phq_bin"), strata = "collapserace", data=mydata, argsNormal = list(NULL), argsNonNormal = list(var.equal = TRUE), includeNA = TRUE)
-
-#kable(print(table_predictors, contDigits=1, varLabel = T, printToggle=FALSE), booktabs=T) %>% add_indent(c(4:6, 8:12, 14:16, 18:20)) %>% kable_styling(position="center")
-
-#kable(print(table_outcomes, contDigits=1, varLabel = T, printToggle=FALSE), booktabs=T) %>% add_indent(c(4:7, 9:12, 14:17, 19:22, 24:27, 29:32, 36:38)) %>% kable_styling(position="center")
-
-#table_predictors_notstrat <- CreateTableOne(vars=c("age", "gender", "collapseeduc", "public_benefits", "collapsemarital", "number_children", "years_cityflint", "confidants2"), data=mydata, argsNormal = list(NULL), argsNonNormal = list(var.equal = TRUE), includeNA=TRUE)
-
-#table_outcomes_notstrat <- CreateTableOne(vars=c("num_time_notice", "blood_test_after_april_2014", "elevated_lead_after_april_2014", "rashes_after_april_2014", "hairloss_after_april_2014", "nausea_after_april_2014", "irritable_after_april_2014", "overall_collapse", "ptsd_bin", "phq_bin"), data=mydata, argsNormal = list(NULL), argsNonNormal = list(var.equal = TRUE), includeNA=TRUE)
-
-#kable(print(table_predictors_notstrat, contDigits=1, varLabel = T, printToggle=FALSE), booktabs=T) %>% add_indent(c(4:6, 8:12, 14:16, 18:20)) %>% kable_styling(position="center")
-
-#kable(print(table_outcomes_notstrat, contDigits=1, varLabel = T, printToggle=FALSE), booktabs=T) %>% add_indent(c(4:7, 9:12, 14:17, 19:22, 24:27, 29:32, 36:38)) %>% kable_styling(position="center")
 ```
 
 Now, we conduct Moran's I tests grouped by zipcode to reassure ourselves that we can just adjust for zipcode and not do a full-on spatial analysis:
@@ -359,15 +343,8 @@ subdat <- data.frame("Outcome" = rep("Overall", 17), "Predictor" = c("Age", "Mal
 
 effect_estims <- rbind(effect_estims, subdat)
 
-#bloodlead_dem <- with(imp_long_mids, logistf(elevated_collapse ~ age + collapsegender + collapserace + collapsepubben + number_children + years_cityflint + confidants2 + zip2))
-
-#bloodlead_dem <- lapply(1:5, function(X) logistf(data = select(list_imps[[X]], elevated_collapse, age, collapsegender, collapserace, collapsepubben, number_children, years_cityflint, confidants2, zip2), elevated_collapse ~ age + collapsegender + collapserace + collapsepubben + number_children + years_cityflint + confidants2 + zip2, pl = TRUE, dataout = TRUE))
-
 bloodlead_dem <- with(imp_long_mids, glm(elevated_collapse ~ age + collapsegender + collapserace + collapsepubben + collapseeduc2 + employ_collapse + number_children + years_cityflint + confidants2 + zip2, family = "binomial"))
 
-#test1 <- summary(bloodlead_dem)
-
-#test <- CLIP.confint(obj = bloodlead_dem)
 summary(pool(bloodlead_dem))
 
 subdat <- data.frame("Outcome" = rep("Elevated BLLs", 17), "Predictor" = c("Age", "Male", "Other race", "White", "Receives benefits", "High school or less", "Some college", "Other employment", "Retired", "Unemployed", "Number of children", "Years in Flint", "Network size", "Zip 48504", "Zip 48505", "Zip 48506", "Zip 48507/48532"), "Estimate" = summary(pool(bloodlead_dem))[-1,2], "SE" = summary(pool(bloodlead_dem))[-1,3], "Pval" = summary(pool(bloodlead_dem))[-1,6])
@@ -406,10 +383,6 @@ subdat <- data.frame("Outcome" = rep("PHQ", 4), "Predictor" = c("Number of sympt
 
 effect_estims <- rbind(effect_estims, subdat)
 
-#rash_symp <- logistf(rash_collapse ~ age + gender + collapserace + collapsepubben + number_children + years_cityflint + confidants2 + zip2 + hair_collapse + nausea_collapse + irritable_collapse + elevated_collapse + bloodtest_collapse + num_time_notice + rash_collapse_before, data=mydata_complete)
-
-#test2 <- summary(rash_symp)
-
 rash_symp <- with(imp_long_mids, glm(rash_collapse ~ age + collapsegender + collapserace + collapsepubben + collapseeduc2 + employ_collapse + number_children + years_cityflint + confidants2 + zip2 + hair_collapse + nausea_collapse + irritable_collapse + elevated_collapse + bloodtest_collapse + num_time_notice + rash_collapse_before, family = "binomial"))
 
 summary(pool(rash_symp))
@@ -417,10 +390,6 @@ summary(pool(rash_symp))
 subdat <- data.frame("Outcome" = rep("Rashes", 7), "Predictor" = c("Hair loss", "Nausea", "Agitation", "Elevated BLLs", "Get tested", "Time to notice", "Rashes before"), "Estimate" = summary(pool(rash_symp))[19:25,2], "SE" = summary(pool(rash_symp))[19:25,3], "Pval" = summary(pool(rash_symp))[19:25,6])
 
 effect_estims <- rbind(effect_estims, subdat)
-
-#hairloss_symp <- logistf(hair_collapse ~ age + gender + collapserace + collapsepubben + number_children + years_cityflint + confidants2 + zip2 + rash_collapse + nausea_collapse + irritable_collapse + elevated_collapse + bloodtest_collapse + num_time_notice + hair_collapse_before, data=mydata_complete)
-
-#test3 <- summary(hairloss_symp)
 
 hairloss_symp <- with(imp_long_mids, glm(hair_collapse ~ age + collapsegender + collapserace + collapsepubben + collapseeduc2 + employ_collapse + number_children + years_cityflint + confidants2 + zip2 + rash_collapse + nausea_collapse + irritable_collapse + elevated_collapse + bloodtest_collapse + num_time_notice + hair_collapse_before, family = "binomial"))
 
@@ -430,10 +399,6 @@ subdat <- data.frame("Outcome" = rep("Hair loss", 7), "Predictor" = c("Rashes", 
 
 effect_estims <- rbind(effect_estims, subdat)
 
-#nausea_symp <- logistf(nausea_collapse ~ age + gender + collapserace + collapsepubben + number_children + years_cityflint + confidants2 + zip2 + rash_collapse + hair_collapse + irritable_collapse + elevated_collapse + bloodtest_collapse + num_time_notice + nausea_collapse_before, data=mydata_complete)
-
-#test4 <- summary(nausea_symp)
-
 nausea_symp <- with(imp_long_mids, glm(nausea_collapse ~ age + collapsegender + collapserace + collapsepubben + collapseeduc2 + employ_collapse + number_children + years_cityflint + confidants2 + zip2 + rash_collapse + hair_collapse + irritable_collapse + elevated_collapse + bloodtest_collapse + num_time_notice + nausea_collapse_before, family = "binomial"))
 
 summary(pool(nausea_symp))
@@ -441,10 +406,6 @@ summary(pool(nausea_symp))
 subdat <- data.frame("Outcome" = rep("Nausea", 7), "Predictor" = c("Rashes", "Hair loss", "Agitation", "Elevated BLLs", "Get tested", "Time to notice", "Nausea before"), "Estimate" = summary(pool(nausea_symp))[19:25,2], "SE" = summary(pool(nausea_symp))[19:25,3], "Pval" = summary(pool(nausea_symp))[19:25,6])
 
 effect_estims <- rbind(effect_estims, subdat)
-
-#irritable_symp <- logistf(irritable_collapse ~ age + gender + collapserace + collapsepubben + number_children + years_cityflint + confidants2 + zip2 + rash_collapse + hair_collapse + nausea_collapse + elevated_collapse + bloodtest_collapse + num_time_notice + irritable_collapse_before, data=mydata_complete)
-
-#test5 <- summary(irritable_symp)
 
 irritable_symp <- with(imp_long_mids, glm(irritable_collapse ~ age + collapsegender + collapserace + collapsepubben + collapseeduc2 + employ_collapse + number_children + years_cityflint + confidants2 + zip2 + rash_collapse + hair_collapse + nausea_collapse + elevated_collapse + bloodtest_collapse + num_time_notice + irritable_collapse_before, family = "binomial"))
 
@@ -474,16 +435,4 @@ pretty_effects <- data.frame("Outcome" = effect_estims$Outcome, "Predictor" = ef
 pretty_effects$Label <- paste0(round(pretty_effects$Estimate, digits = 1), " (", round(pretty_effects$Lower, digits = 1), ", ", round(pretty_effects$Upper, digits = 1), ")")
 
 pretty_effects2 <- select(pretty_effects, Outcome, Predictor, Label, BHpvalue)
-#ptsd_plot <- ggplot(myresults[myresults$Outcome=="PTSD",], aes(fct_rev(Predictor_clean), Coefficient)) + geom_point() + geom_errorbar(aes(ymin=Lower, ymax=Upper, width=0.1)) + coord_flip(ylim=c(-2.35, 5.5)) + labs(y = "Odds Ratio and 95% CI", x = "", caption=TeX('Protective $\\leftarrow \\rightarrow$ Harmful' )) + geom_hline(yintercept=0, linetype="dashed", color = "black") + theme(panel.background = element_rect(fill="white"), panel.grid.major = element_blank(), panel.grid.minor=element_blank(), legend.position="bottom", text=element_text(size=14), plot.caption = element_text(size=14, hjust = 0.15)) + geom_rect(fill="white", ymin=4.7, ymax=Inf, xmin=-Inf, xmax=Inf) + annotate(geom = 'text', label = myresults$Label[myresults$Outcome=="PTSD"], x = myresults$Predictor_clean[myresults$Outcome=="PTSD"], y = 3.5, hjust = 0, vjust = 0.5) + scale_y_continuous(breaks=log(c(0.1, 0.25, 0.5, 1, 2, 4, 10)), labels=c("0.1","0.25", "0.5", "1.0", "2.0", "4.0", "10.0")) + ggtitle("Outcome: Trauma Symptoms") 
- 
-#ptsd_plot
-
-#phq_plot <- ggplot(myresults[myresults$Outcome=="PHQ",], aes(fct_rev(Predictor_clean), Coefficient)) + geom_point() + geom_errorbar(aes(ymin=Lower, ymax=Upper, width=0.1)) + coord_flip(ylim=c(-2.35, 5.5)) + labs(y = "Odds Ratio and 95% CI", x = "", caption=TeX('Protective $\\leftarrow \\rightarrow$ Harmful' )) + geom_hline(yintercept=0, linetype="dashed", color = "black") + theme(panel.background = element_rect(fill="white"), panel.grid.major = element_blank(), panel.grid.minor=element_blank(), legend.position="bottom", text=element_text(size=14), plot.caption = element_text(size=14, hjust = 0.15), axis.title.y=element_blank(), axis.text.y=element_blank(), axis.ticks.y=element_blank()) + geom_rect(fill="white", ymin=4.7, ymax=Inf, xmin=-Inf, xmax=Inf) + annotate(geom = 'text', label = myresults$Label[myresults$Outcome=="PHQ"], x = myresults$Predictor_clean[myresults$Outcome=="PHQ"], y = 3.5, hjust = 0, vjust = 0.5) + scale_y_continuous(breaks=log(c(0.1, 0.25, 0.5, 1, 2, 4, 10)), labels=c("0.1","0.25", "0.5", "1.0", "2.0", "4.0", "10.0")) + ggtitle("Outcome: Depression/Anxiety") 
- 
-#phq_plot
-
-#mental_plots <- grid.arrange(ptsd_plot, phq_plot, nrow=1, widths = c(6, 3))
-
 ```
-
-

@@ -65,11 +65,8 @@ rm(list=c("adult_clean_eliz", "subadult", "child_final"))
 
 samp1 <- nrow(child_adult)
 
-#child_adult <- filter(child_adult, age.x >= 5)
 child_adult <- filter(child_adult, age.x >= 0.5)
 samp2 <- nrow(child_adult)
-
-##child_adult <- filter(child_adult, relationship == "Your child" | relationship == "Your grandchild")
 
 child_adult$gettested <- ifelse(child_adult$blood_test_after_april_2014=="Yes", 1, ifelse(is.na(child_adult$blood_test_after_april_2014), NA_real_, 0))
 
@@ -104,28 +101,6 @@ exam <- dplyr::select(child_adult, child, unique_id, relationship, age.x, gender
 child_adult2 <- child_adult[complete.cases(exam)]
 child_adult <- child_adult2
 ```
-
-## Introductory Remarks
-
-Note: May 2021 
-
-This report was an attempt to respond to two key reviewer concerns: 1) the presence of children under age 5 in our data--and thus not alive in April 2014, when the water switch happened, and 2) what to do with children who were described by a caregiver who wasn't their parent or grandparent. 
-
-I tried a number of things to figure out what to do with children under age 5. Part of the problem here is that we were looking at excess mortality outcomes (i.e. "Did the child have this symptom after but not before April 2014?"), and for children under age 5, this wasn't defined, since the child wasn't alive before April 2014. I considered looking at 1) just the after outcome ("Did the child have this symptom after April 2014, regardless of whether they had it before 2014?") or 2) forcibly assuming that children under age 5 didn't have the symptom before April 2014. I was disturbed that these two outcome definitions resulted in  different results, with outcome definition (2) yielding many significant results, while outcome definition (1) yielded almost no significant results and different directions of association. That's bad news. Initially, I thought we would exclude all children under age 5. However, after more discussions with Jerel, we instead decided to restrict to children ages 6 months and up, and use outcome definition (1).  
-
-I then looked a little more closely at the second inclusion criteria: children described by an aunt/uncle/babysitter/sibling, rather than a parent/grandparent. After investigating these children more closely, I concluded that we should keep them. They aren't significantly different from children described by a parent/grandparent, and including them in the sample doesn't affect the direction/magnitude of any associations, but it *does* increase our sample size enough to start seeing significant findings, because the larger sample size shrinks the standard errors.
-
-Therefore, I have concluded that our inclusion criteria will be children ages 6 months and up, considering outcomes based on just after April 2014 (and not before) described by any caregiver living in the City of Flint. 
-
-Note: Oct. 2021
-
-This analysis was redone using Bayesian models, in order to meet a reviewer request for models that would not converge using REML. This allows us to address the issues with small sample size and separation in the data.
-
-Note: Dec. 2021
-
-This analysis was redone using GEE, in order to meet a reviewer request for a non-Bayesian analysis and to deal with the large number of small clusters in the data.
-
-\newpage
 
 ## Descriptives
 
@@ -370,5 +345,4 @@ pretty_effects <- dplyr::select(effects_mat, Outcome, Variable, label, prettypBH
 rownames(pretty_effects) <- NULL
 
 kable(pretty_effects)
-#kable(pretty_effects, col.names = c("Outcome", "Predictor", "Odds Ratio (95% CI)"))
 ```

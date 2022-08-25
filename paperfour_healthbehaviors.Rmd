@@ -378,14 +378,12 @@ missing_plot
 
 mydata_complete <- mydata[,vars]
 
-#mydata_complete$gender <- factor(mydata_complete$gender)
 mydata_complete$reth <- factor(mydata_complete$reth)
 mydata_complete$educ_level <- factor(mydata_complete$educ_level)
 mydata_complete$employ_status <- factor(mydata_complete$employ_status)
 mydata_complete$marital_status <- factor(mydata_complete$marital_status)
 mydata_complete$current_housing <- factor(mydata_complete$current_housing)
 mydata_complete$current_zip <- factor(mydata_complete$current_zip)
-#mydata_complete$have_health_insurance <- factor(mydata_complete$have_health_insurance)
 mydata_complete$access_vehicle <- factor(mydata_complete$access_vehicle)
 mydata_complete$water_source <- factor(mydata_complete$water_source)
 mydata_complete$water_test_event_ind <- factor(mydata_complete$water_test_event_ind)
@@ -668,7 +666,7 @@ subdat <- data.frame("Outcome" = rep("Time to notice", 22), "Predictor" = c("Age
 
 effect_estims <- rbind(effect_estims, subdat)
 
-number_water_tests <- with(imp_long_mids, lm(log(watertestnum + 0.1) ~ age + reth2 + gender2 + educ_level2 + marital_status2 + public_benefits + have_health_insurance2 + employ_status2 + years_cityflint + current_housing2 + access_vehicle + water_source2 + number_children + confidants2))
+number_water_tests <- with(imp_long_mids, glm(watertestnum ~ age + reth2 + gender2 + educ_level2 + marital_status2 + public_benefits + have_health_insurance2 + employ_status2 + years_cityflint + current_housing2 + access_vehicle + water_source2 + number_children + confidants2, family = "poisson"))
 
 summary(pool(number_water_tests))
 
@@ -700,15 +698,6 @@ subdat <- data.frame("Outcome" = rep("Blood test", 22), "Predictor" = c("Age", "
 
 effect_estims <- rbind(effect_estims, subdat)
 
-## This model could not be fit because of small sample sizes.
-#elev_blls <- with(imp_long_mids, glm(as.numeric(elevated_lead_after_april_2014=="Yes") ~ age + reth2 + gender2 + educ_level2 + marital_status2 + public_benefits + have_health_insurance2 + employ_status2 + years_cityflint + water_source2 + number_children + confidants2, family = "binomial"))
-
-#summary(pool(elev_blls))
-
-#subdat <- data.frame("Outcome" = rep("Elevated BLLs", 18), "Predictor" = c("Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Male (ref: Female)", "Some college (ref: High school or less)", "Associate's degree or more (ref: High school or less", "Separated (ref: Married)", "Single (ref: Married)", "No public benefits (ref: Receives public benefits)", "Unsure if receives public benefits (ref: Receives public benefits)", "Health insured (ref: Uninsured)", "Other employment (ref: Employed)", "Retired (ref: Employed)", "Unemployed (ref: Employed)", "Years lived in Flint", "Other water source (ref: Flint tap water)", "Number of children", "Network size"), "Estimate" = summary(pool(elev_blls))$estimate[-1], "SE" = summary(pool(elev_blls))$std.error[-1], "Pval" = summary(pool(elev_blls))$p.value[-1])
-
-#effect_estims <- rbind(effect_estims, subdat)
-
 currentwatersource <- with(imp_long_mids, polr(current_water_source2 ~ age + reth2 + gender2 + educ_level2 + marital_status2 + public_benefits + have_health_insurance2 + employ_status2 + years_cityflint + current_housing2 + access_vehicle + water_source2 + number_children + confidants2, Hess = TRUE))
 
 summary(pool(currentwatersource))
@@ -733,35 +722,19 @@ subdat <- data.frame("Outcome" = rep("Use water pod now", 22), "Predictor" = c("
 
 effect_estims <- rbind(effect_estims, subdat)
 
-number_bottles <- with(imp_long_mids, glm(num_bottles_per_day ~ age + reth2 + gender2 + educ_level2 + marital_status2 + public_benefits + have_health_insurance2 + employ_status2 + years_cityflint + current_housing2 + access_vehicle + water_source2 + number_children + confidants2, family = "quasipoisson"))
-
-summary(pool(number_bottles))
-
-subdat <- data.frame("Outcome" = rep("Number of bottles per day", 22), "Predictor" = c("Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Male (ref: Female)", "Some college (ref: High school or less)", "Associate's degree or more (ref: High school or less", "Separated (ref: Married)", "Single (ref: Married)", "No public benefits (ref: Receives public benefits)", "Unsure if receives public benefits (ref: Receives public benefits)", "Health insured (ref: Uninsured)", "Other employment (ref: Employed)", "Retired (ref: Employed)", "Unemployed (ref: Employed)", "Years lived in Flint", "Rented home (ref: Owned home)", "Unstable housing (ref: Owned home)", "Other housing (ref: Owned home)", "Other water source (ref: Flint tap water)", "Has vehicle (ref: No vehicle)", "Number of children", "Network size"), "Estimate" = summary(pool(number_bottles))$estimate[-1], "SE" = summary(pool(number_bottles))$std.error[-1], "Pval" = summary(pool(number_bottles))$p.value[-1])
-
-effect_estims <- rbind(effect_estims, subdat)
-
-recycle_bottles <- with(imp_long_mids, glm(as.numeric(water_bottle_disposal=="I don't ever have plastic water bottles at home" | water_bottle_disposal=="Keep/save them for re-use or another purpose" | water_bottle_disposal=="Recycle them") ~ age + reth2 + gender2 + educ_level2 + marital_status2 + public_benefits + have_health_insurance2 + employ_status2 + years_cityflint + current_housing2 + access_vehicle + water_source2 + number_children + confidants2, family = "binomial"))
-
-summary(pool(recycle_bottles))
-
-subdat <- data.frame("Outcome" = rep("Bottle disposal", 22), "Predictor" = c("Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Male (ref: Female)", "Some college (ref: High school or less)", "Associate's degree or more (ref: High school or less", "Separated (ref: Married)", "Single (ref: Married)", "No public benefits (ref: Receives public benefits)", "Unsure if receives public benefits (ref: Receives public benefits)", "Health insured (ref: Uninsured)", "Other employment (ref: Employed)", "Retired (ref: Employed)", "Unemployed (ref: Employed)", "Years lived in Flint", "Rented home (ref: Owned home)", "Unstable housing (ref: Owned home)", "Other housing (ref: Owned home)", "Other water source (ref: Flint tap water)", "Has vehicle (ref: No vehicle)", "Number of children", "Network size"), "Estimate" = summary(pool(recycle_bottles))$estimate[-1], "SE" = summary(pool(recycle_bottles))$std.error[-1], "Pval" = summary(pool(recycle_bottles))$p.value[-1])
-
-effect_estims <- rbind(effect_estims, subdat)
-
-waterlinestatus <- with(imp_long_mids, glm(as.numeric(water_line_status_after_april2014=="A mailing or official said that my lead/water line did not need to be replaced" | water_line_status_after_april2014=="I was offered a lead/water line replacement but I refused it" | water_line_status_after_april2014=="My lead/water lines were replaced") ~ age + reth2 + gender2 + educ_level2 + marital_status2 + public_benefits + have_health_insurance2 + employ_status2 + years_cityflint + current_housing2 + access_vehicle + water_source2 + number_children + confidants2, family = "binomial"))
+waterlinestatus <- with(filter(imp_long_mids, water_source2=="Tap water through the City of Flint"), glm(as.numeric(water_line_status_after_april2014=="A mailing or official said that my lead/water line did not need to be replaced" | water_line_status_after_april2014=="I was offered a lead/water line replacement but I refused it" | water_line_status_after_april2014=="My lead/water lines were replaced") ~ age + reth2 + gender2 + educ_level2 + marital_status2 + public_benefits + have_health_insurance2 + employ_status2 + years_cityflint + current_housing2 + access_vehicle + number_children + confidants2, family = "binomial"))
 
 summary(pool(waterlinestatus))
 
-subdat <- data.frame("Outcome" = rep("Water line status", 22), "Predictor" = c("Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Male (ref: Female)", "Some college (ref: High school or less)", "Associate's degree or more (ref: High school or less", "Separated (ref: Married)", "Single (ref: Married)", "No public benefits (ref: Receives public benefits)", "Unsure if receives public benefits (ref: Receives public benefits)", "Health insured (ref: Uninsured)", "Other employment (ref: Employed)", "Retired (ref: Employed)", "Unemployed (ref: Employed)", "Years lived in Flint", "Rented home (ref: Owned home)", "Unstable housing (ref: Owned home)", "Other housing (ref: Owned home)", "Other water source (ref: Flint tap water)", "Has vehicle (ref: No vehicle)", "Number of children", "Network size"), "Estimate" = summary(pool(waterlinestatus))$estimate[-1], "SE" = summary(pool(waterlinestatus))$std.error[-1], "Pval" = summary(pool(waterlinestatus))$p.value[-1])
+subdat <- data.frame("Outcome" = rep("Water line status", 21), "Predictor" = c("Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Male (ref: Female)", "Some college (ref: High school or less)", "Associate's degree or more (ref: High school or less", "Separated (ref: Married)", "Single (ref: Married)", "No public benefits (ref: Receives public benefits)", "Unsure if receives public benefits (ref: Receives public benefits)", "Health insured (ref: Uninsured)", "Other employment (ref: Employed)", "Retired (ref: Employed)", "Unemployed (ref: Employed)", "Years lived in Flint", "Rented home (ref: Owned home)", "Unstable housing (ref: Owned home)", "Other housing (ref: Owned home)", "Has vehicle (ref: No vehicle)", "Number of children", "Network size"), "Estimate" = summary(pool(waterlinestatus))$estimate[-1], "SE" = summary(pool(waterlinestatus))$std.error[-1], "Pval" = summary(pool(waterlinestatus))$p.value[-1])
 
 effect_estims <- rbind(effect_estims, subdat)
 
-water_line_time <- with(imp_long_mids, coxph(Surv(water_line_surv, as.numeric(waterline_replaced_eventind)-1) ~ age + reth2 + gender2 + educ_level2 + marital_status2 + public_benefits + have_health_insurance2 + employ_status2 + years_cityflint + current_housing2 + access_vehicle + water_source2 + number_children + confidants2))
+water_line_time <- with(filter(imp_long_mids, water_source2=="Tap water through the City of Flint"), coxph(Surv(water_line_surv, as.numeric(waterline_replaced_eventind)-1) ~ age + reth2 + gender2 + educ_level2 + marital_status2 + public_benefits + have_health_insurance2 + employ_status2 + years_cityflint + current_housing2 + access_vehicle + number_children + confidants2))
 
 summary(pool(water_line_time))
 
-subdat <- data.frame("Outcome" = rep("Time to water line replacement", 22), "Predictor" = c("Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Male (ref: Female)", "Some college (ref: High school or less)", "Associate's degree or more (ref: High school or less", "Separated (ref: Married)", "Single (ref: Married)", "No public benefits (ref: Receives public benefits)", "Unsure if receives public benefits (ref: Receives public benefits)", "Health insured (ref: Uninsured)", "Other employment (ref: Employed)", "Retired (ref: Employed)", "Unemployed (ref: Employed)", "Years lived in Flint", "Rented home (ref: Owned home)", "Unstable housing (ref: Owned home)", "Other housing (ref: Owned home)", "Other water source (ref: Flint tap water)", "Has vehicle (ref: No vehicle)", "Number of children", "Network size"), "Estimate" = summary(pool(water_line_time))$estimate, "SE" = summary(pool(water_line_time))$std.error, "Pval" = summary(pool(water_line_time))$p.value)
+subdat <- data.frame("Outcome" = rep("Time to water line replacement", 21), "Predictor" = c("Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Male (ref: Female)", "Some college (ref: High school or less)", "Associate's degree or more (ref: High school or less", "Separated (ref: Married)", "Single (ref: Married)", "No public benefits (ref: Receives public benefits)", "Unsure if receives public benefits (ref: Receives public benefits)", "Health insured (ref: Uninsured)", "Other employment (ref: Employed)", "Retired (ref: Employed)", "Unemployed (ref: Employed)", "Years lived in Flint", "Rented home (ref: Owned home)", "Unstable housing (ref: Owned home)", "Other housing (ref: Owned home)", "Has vehicle (ref: No vehicle)", "Number of children", "Network size"), "Estimate" = summary(pool(water_line_time))$estimate, "SE" = summary(pool(water_line_time))$std.error, "Pval" = summary(pool(water_line_time))$p.value)
 
 effect_estims <- rbind(effect_estims, subdat)
 
@@ -772,32 +745,6 @@ summary(pool(drinktap))
 subdat <- data.frame("Outcome" = rep("Likely to drink tap in three years?", 22), "Predictor" = c("Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Male (ref: Female)", "Some college (ref: High school or less)", "Associate's degree or more (ref: High school or less", "Separated (ref: Married)", "Single (ref: Married)", "No public benefits (ref: Receives public benefits)", "Unsure if receives public benefits (ref: Receives public benefits)", "Health insured (ref: Uninsured)", "Other employment (ref: Employed)", "Retired (ref: Employed)", "Unemployed (ref: Employed)", "Years lived in Flint", "Rented home (ref: Owned home)", "Unstable housing (ref: Owned home)", "Other housing (ref: Owned home)", "Other water source (ref: Flint tap water)", "Has vehicle (ref: No vehicle)", "Number of children", "Network size"), "Estimate" = summary(pool(drinktap))$estimate[1:22], "SE" = summary(pool(drinktap))$std.error[1:22], "Pval" = NA)
 
 effect_estims <- rbind(effect_estims, subdat)
-
-#child_test <- with(imp_long_mids, glm(testpost2014_child ~ age + reth2 + gender2 + educ_level2 + marital_status2 + public_benefits + have_health_insurance2 + employ_status2 + years_cityflint + current_housing2 + access_vehicle + water_source2 + confidants2 + factor(blood_test_after_april_2014, ordered = FALSE) + offset(number_children), family = "quasipoisson"))
-
-#summary(pool(child_test))
-
-#subdat <- data.frame("Outcome" = rep("Got child tested", 23), "Predictor" = c("Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Male (ref: Female)", "Some college (ref: High school or less)", "Associate's degree or more (ref: High school or less", "Separated (ref: Married)", "Single (ref: Married)", "No public benefits (ref: Receives public benefits)", "Unsure if receives public benefits (ref: Receives public benefits)", "Health insured (ref: Uninsured)", "Other employment (ref: Employed)", "Retired (ref: Employed)", "Unemployed (ref: Employed)", "Years lived in Flint", "Rented home (ref: Owned home)", "Unstable housing (ref: Owned home)", "Other housing (ref: Owned home)", "Other water source (ref: Flint tap water)", "Has vehicle (ref: No vehicle)", "Network size", "Adult not tested (ref: Adult tested)", "Adult unsure if tested (ref: Adult tested)"), "Estimate" = summary(pool(child_test))$estimate[-1], "SE" = summary(pool(child_test))$std.error[-1], "Pval" = summary(pool(child_test))$p.value[-1])
-
-#effect_estims <- rbind(effect_estims, subdat)
-
-##This model not included because of stability issues:
-
-#child_bll <- with(imp_long_mids, glm(bllpost2014_child ~ age + reth2 + gender2 + educ_level2 + marital_status2 + public_benefits + have_health_insurance2 + employ_status2 + years_cityflint + current_housing2 + access_vehicle + water_source2 + confidants2 + as.numeric(elevated_lead_after_april_2014=="Yes") + offset(number_children), family = "quasipoisson"))
-
-#summary(pool(child_bll))
-
-#subdat <- data.frame("Outcome" = rep("Child had elevated BLLs", 22), "Predictor" = c("Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Male (ref: Female)", "Some college (ref: High school or less)", "Associate's degree or more (ref: High school or less", "Separated (ref: Married)", "Single (ref: Married)", "No public benefits (ref: Receives public benefits)", "Unsure if receives public benefits (ref: Receives public benefits)", "Health insured (ref: Uninsured)", "Other employment (ref: Employed)", "Retired (ref: Employed)", "Unemployed (ref: Employed)", "Years lived in Flint", "Rented home (ref: Owned home)", "Unstable housing (ref: Owned home)", "Other housing (ref: Owned home)", "Other water source (ref: Flint tap water)", "Has vehicle (ref: No vehicle)", "Network size", "Adult has elevated BLLs (ref: Adult has normal/unsure BLLs)"), "Estimate" = summary(pool(child_bll))$estimate[-1], "SE" = summary(pool(child_bll))$std.error[-1], "Pval" = summary(pool(child_bll))$p.value[-1])
-
-#effect_estims <- rbind(effect_estims, subdat)
-
-#child_bottled <- with(imp_long_mids, glm(bottledwater_child ~ age + reth2 + gender2 + educ_level2 + marital_status2 + public_benefits + have_health_insurance2 + employ_status2 + years_cityflint + current_housing2 + access_vehicle + water_source2 + confidants2 + factor(current_water_source2, ordered = FALSE) + offset(number_children), family = "quasipoisson"))
-
-#summary(pool(child_bottled))
-
-#subdat <- data.frame("Outcome" = rep("Child uses bottled water", 23), "Predictor" = c("Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Male (ref: Female)", "Some college (ref: High school or less)", "Associate's degree or more (ref: High school or less", "Separated (ref: Married)", "Single (ref: Married)", "No public benefits (ref: Receives public benefits)", "Unsure if receives public benefits (ref: Receives public benefits)", "Health insured (ref: Uninsured)", "Other employment (ref: Employed)", "Retired (ref: Employed)", "Unemployed (ref: Employed)", "Years lived in Flint", "Rented home (ref: Owned home)", "Unstable housing (ref: Owned home)", "Other housing (ref: Owned home)", "Other water source (ref: Flint tap water)", "Has vehicle (ref: No vehicle)", "Network size", "Adult uses filtered tap water (ref: Adult uses unfiltered water)", "Adult uses bottled water (ref: Adult uses unfiltered water)"), "Estimate" = summary(pool(child_bottled))$estimate[-1], "SE" = summary(pool(child_bottled))$std.error[-1], "Pval" = summary(pool(child_bottled))$p.value[-1])
-
-#effect_estims <- rbind(effect_estims, subdat)
 ```
 
 Since we fit quite a few models, we use the FDR to adjust for our multiple testing.
@@ -816,6 +763,176 @@ pretty_effects2 <- dplyr::select(pretty_effects, Outcome, Predictor, Label, BHpv
 pretty_effects2[pretty_effects2$BHpvalue <= 0.05,]
 ```
 
+At reviewer request, we redo the above modeling using only the complete data, without multiple imputation:
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+mydata_complete$zip2 <- case_when(
+  mydata_complete$current_zip=="48502" | mydata_complete$current_zip=="48503" ~ "48502/48503",
+  mydata_complete$current_zip=="48504" ~ "48504",
+  mydata_complete$current_zip=="48505" ~ "48505",
+  mydata_complete$current_zip=="48506" ~ "48506",
+  mydata_complete$current_zip=="48507" | mydata_complete$current_zip=="48532" ~ "48507/48532"
+)
 
+mydata_complete$educ_level2 <- case_when(
+  mydata_complete$educ_level=="Less than a high school diploma" | mydata_complete$educ_level=="High school degree or equivalent (e.g. GED)" ~ "High school or less",
+  mydata_complete$educ_level=="Some college, no degree" ~ "Some college",
+  mydata_complete$educ_level=="Associate degree" | mydata_complete$educ_level=="Bachelor's degree" | mydata_complete$educ_level=="Master's, Doctoral or Professional degree" ~ "Associate's or more"
+)
 
+mydata_complete$public_benefits2 <- ifelse(mydata_complete$public_benefits=="Yes", "Yes", "No")
+mydata_complete$gender2 <- ifelse(mydata_complete$gender=="Transgender Woman", "Female", mydata_complete$gender)
+
+mydata_complete$marital_status2 <- case_when(
+  mydata_complete$marital_status=="Single (never married)" ~ "Single (never married)",
+  mydata_complete$marital_status=="Married" ~ "Married", 
+  mydata_complete$marital_status=="Separated" | mydata_complete$marital_status=="Divorced" | mydata_complete$marital_status=="Widowed" ~ "Separated"
+)
+
+mydata_complete$employ_status2 <- case_when(
+  mydata_complete$employ_status=="Jobs/sporadic" | mydata_complete$employ_status=="Other" ~ "Other",
+  mydata_complete$employ_status=="Retired" ~ "Retired",
+  mydata_complete$employ_status=="Employed" ~ "Employed",
+  mydata_complete$employ_status=="Unemployed" ~ "Unemployed",
+  is.na(mydata_complete$employ_status) ~ NA_character_)
+
+mydata_complete$reth2 <- case_when(
+  mydata_complete$reth=="Black" ~ "Black",
+  mydata_complete$reth=="White" ~ "White",
+  mydata_complete$reth=="Mixed Race" | mydata_complete$reth=="American Indian" | mydata_complete$reth=="Other race" | mydata_complete$reth=="Asian" | mydata_complete$reth=="Hispanic/Latinx" ~ "Other"
+)
+ 
+mydata_complete$current_housing2 <- case_when(
+  mydata_complete$current_housing=="You own a home" ~ "Owned home",
+  mydata_complete$current_housing=="You rent a home" ~ "Rented home",
+  mydata_complete$current_housing=="You are staying with family or a friend" | mydata_complete$current_housing=="You are at a shelter" | mydata_complete$current_housing=="You are crashing/couch-surfing somewhere" | mydata_complete$current_housing=="You are on the streets" ~ "Unstable housing",
+  mydata_complete$current_housing=="You are at a retirement facility" | mydata_complete$current_housing=="You are in an in-patient setting (e.g., rehab)" | mydata_complete$current_housing=="Other" ~ "Other housing"
+)      
+
+mydata_complete$have_health_insurance2 <- ifelse(mydata_complete$have_health_insurance=="Unsure/Don't know", "No", mydata_complete$have_health_insurance)
+
+mydata_complete$water_source2 <- ifelse(mydata_complete$water_source=="Tap water through the City of Flint (Water Department etc.)", "Tap water through the City of Flint", "Other")
+
+mydata_complete$current_water_source2 <- case_when(
+  mydata_complete$current_water_source=="Bottled water" | mydata_complete$current_water_source=="I don't drink any water at home" ~ "Bottled water",
+  mydata_complete$current_water_source=="Tap water (with a filter)" | mydata_complete$current_water_source=="Water from a filtration system" ~ "Filtered tap water",
+  mydata_complete$current_water_source=="Tap water (without a filter)" ~ "Unfiltered tap water"
+)
+    
+mydata_complete$zip2 <- factor(mydata_complete$zip2)
+mydata_complete$educ_level2 <- factor(mydata_complete$educ_level2, levels = c("High school or less", "Some college", "Associate's or more"))
+mydata_complete$public_benefits2 <- factor(mydata_complete$public_benefits2)
+mydata_complete$marital_status2 <- factor(mydata_complete$marital_status2)
+mydata_complete$employ_status2 <- factor(mydata_complete$employ_status2)
+mydata_complete$reth2 <- factor(mydata_complete$reth2)
+mydata_complete$current_housing2 <- factor(mydata_complete$current_housing2, levels = c("Owned home", "Rented home", "Unstable housing", "Other housing"))
+mydata_complete$have_health_insurance2 <- factor(mydata_complete$have_health_insurance2)
+mydata_complete$water_source2 <- factor(mydata_complete$water_source2, levels = c("Tap water through the City of Flint", "Other"))
+mydata_complete$current_water_source2 <- factor(mydata_complete$current_water_source2, levels = c("Unfiltered tap water", "Filtered tap water", "Bottled water"), ordered = TRUE)
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+effect_estims <- data.frame("Outcome" = NA, "Predictor" = NA, "Estimate" = NA, "SE" = NA, "Pval" = NA)
+
+time_to_notice <- lm(log(num_time_notice) ~ age + reth2 + gender2 + educ_level2 + marital_status2 + public_benefits + have_health_insurance2 + employ_status2 + years_cityflint + current_housing2 + water_source2 + access_vehicle + number_children + confidants2, data = mydata_complete)
+
+summary(time_to_notice)
+
+subdat <- data.frame("Outcome" = rep("Time to notice", 22), "Predictor" = c("Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Male (ref: Female)", "Some college (ref: High school or less)", "Associate's degree or more (ref: High school or less", "Separated (ref: Married)", "Single (ref: Married)", "No public benefits (ref: Receives public benefits)", "Unsure if receives public benefits (ref: Receives public benefits)", "Health insured (ref: Uninsured)", "Other employment (ref: Employed)", "Retired (ref: Employed)", "Unemployed (ref: Employed)", "Years lived in Flint", "Rented home (ref: Owned home)", "Unstable housing (ref: Owned home)", "Other housing (ref: Owned home)", "Other water source (ref: Flint tap water)", "Has vehicle (ref: No vehicle)", "Number of children", "Network size"), "Estimate" = summary(time_to_notice)$coefficients[-1, 1], "SE" = summary(time_to_notice)$coefficients[-1, 2], "Pval" = summary(time_to_notice)$coefficients[-1, 4])
+
+effect_estims <- rbind(effect_estims, subdat)
+
+number_water_tests <- glm(watertestnum ~ age + reth2 + gender2 + educ_level2 + marital_status2 + public_benefits + have_health_insurance2 + employ_status2 + years_cityflint + current_housing2 + access_vehicle + water_source2 + number_children + confidants2, data = mydata_complete, family = "poisson")
+
+summary(number_water_tests)
+
+subdat <- data.frame("Outcome" = rep("Number of water tests", 22), "Predictor" = c("Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Male (ref: Female)", "Some college (ref: High school or less)", "Associate's degree or more (ref: High school or less", "Separated (ref: Married)", "Single (ref: Married)", "No public benefits (ref: Receives public benefits)", "Unsure if receives public benefits (ref: Receives public benefits)", "Health insured (ref: Uninsured)", "Other employment (ref: Employed)", "Retired (ref: Employed)", "Unemployed (ref: Employed)", "Years lived in Flint", "Rented home (ref: Owned home)", "Unstable housing (ref: Owned home)", "Other housing (ref: Owned home)", "Other water source (ref: Flint tap water)", "Has vehicle (ref: No vehicle)", "Number of children", "Network size"), "Estimate" = summary(number_water_tests)$coefficients[-1,1], "SE" = summary(number_water_tests)$coefficients[-1,2], "Pval" = summary(number_water_tests)$coefficients[-1,4])
+
+effect_estims <- rbind(effect_estims, subdat)
+
+last_water_test_time <- coxph(Surv(water_test_surv, as.numeric(water_test_event_ind)-1) ~ age + reth2 + gender2 + educ_level2 + marital_status2 + public_benefits + have_health_insurance2 + employ_status2 + years_cityflint + current_housing2 + access_vehicle + water_source2 + number_children + confidants2, data = mydata_complete)
+
+summary(last_water_test_time)
+
+subdat <- data.frame("Outcome" = rep("Time to last water test", 22), "Predictor" = c("Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Male (ref: Female)", "Some college (ref: High school or less)", "Associate's degree or more (ref: High school or less", "Separated (ref: Married)", "Single (ref: Married)", "No public benefits (ref: Receives public benefits)", "Unsure if receives public benefits (ref: Receives public benefits)", "Health insured (ref: Uninsured)", "Other employment (ref: Employed)", "Retired (ref: Employed)", "Unemployed (ref: Employed)", "Years lived in Flint", "Rented home (ref: Owned home)", "Unstable housing (ref: Owned home)", "Other housing (ref: Owned home)", "Other water source (ref: Flint tap water)", "Has vehicle (ref: No vehicle)", "Number of children", "Network size"), "Estimate" = summary(last_water_test_time)$coefficients[,1], "SE" = summary(last_water_test_time)$coefficients[,3], "Pval" = summary(last_water_test_time)$coefficients[,5])
+
+effect_estims <- rbind(effect_estims, subdat)
+
+last_test_result <- glm(as.numeric(collapse_last_test=="Acceptable levels of lead") ~ age + reth2 + gender2 + educ_level2 + marital_status2 + public_benefits + have_health_insurance2 + employ_status2 + years_cityflint + current_housing2 + access_vehicle + water_source2 + number_children + confidants2, family = "binomial", data = mydata_complete)
+
+summary(last_test_result)
+
+subdat <- data.frame("Outcome" = rep("Last water test result", 22), "Predictor" = c("Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Male (ref: Female)", "Some college (ref: High school or less)", "Associate's degree or more (ref: High school or less", "Separated (ref: Married)", "Single (ref: Married)", "No public benefits (ref: Receives public benefits)", "Unsure if receives public benefits (ref: Receives public benefits)", "Health insured (ref: Uninsured)", "Other employment (ref: Employed)", "Retired (ref: Employed)", "Unemployed (ref: Employed)", "Years lived in Flint", "Rented home (ref: Owned home)", "Unstable housing (ref: Owned home)", "Other housing (ref: Owned home)", "Other water source (ref: Flint tap water)", "Has vehicle (ref: No vehicle)", "Number of children", "Network size"), "Estimate" = summary(last_test_result)$coefficients[-1,1], "SE" = summary(last_test_result)$coefficients[-1,2], "Pval" = summary(last_test_result)$coefficients[-1,4])
+
+effect_estims <- rbind(effect_estims, subdat)
+
+blood_test <- glm(as.numeric(blood_test_after_april_2014=="Yes") ~ age + reth2 + gender2 + educ_level2 + marital_status2 + public_benefits + have_health_insurance2 + employ_status2 + years_cityflint + current_housing2 + access_vehicle + water_source2 + number_children + confidants2, family = "binomial", data = mydata_complete)
+
+summary(blood_test)
+
+subdat <- data.frame("Outcome" = rep("Blood test", 22), "Predictor" = c("Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Male (ref: Female)", "Some college (ref: High school or less)", "Associate's degree or more (ref: High school or less", "Separated (ref: Married)", "Single (ref: Married)", "No public benefits (ref: Receives public benefits)", "Unsure if receives public benefits (ref: Receives public benefits)", "Health insured (ref: Uninsured)", "Other employment (ref: Employed)", "Retired (ref: Employed)", "Unemployed (ref: Employed)", "Years lived in Flint", "Rented home (ref: Owned home)", "Unstable housing (ref: Owned home)", "Other housing (ref: Owned home)", "Other water source (ref: Flint tap water)", "Has vehicle (ref: No vehicle)", "Number of children", "Network size"), "Estimate" = summary(blood_test)$coefficients[-1, 1], "SE" = summary(blood_test)$coefficients[-1, 2], "Pval" = summary(blood_test)$coefficients[-1, 4])
+
+effect_estims <- rbind(effect_estims, subdat)
+
+currentwatersource <- polr(current_water_source2 ~ age + reth2 + gender2 + educ_level2 + marital_status2 + public_benefits + have_health_insurance2 + employ_status2 + years_cityflint + current_housing2 + access_vehicle + water_source2 + number_children + confidants2, Hess = TRUE, data = mydata_complete)
+
+summary(currentwatersource)
+
+subdat <- data.frame("Outcome" = rep("Current drinking water source", 22), "Predictor" = c("Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Male (ref: Female)", "Some college (ref: High school or less)", "Associate's degree or more (ref: High school or less", "Separated (ref: Married)", "Single (ref: Married)", "No public benefits (ref: Receives public benefits)", "Unsure if receives public benefits (ref: Receives public benefits)", "Health insured (ref: Uninsured)", "Other employment (ref: Employed)", "Retired (ref: Employed)", "Unemployed (ref: Employed)", "Years lived in Flint", "Rented home (ref: Owned home)", "Unstable housing (ref: Owned home)", "Other housing (ref: Owned home)", "Other water source (ref: Flint tap water)", "Has vehicle (ref: No vehicle)", "Number of children", "Network size"), "Estimate" = summary(currentwatersource)$coefficients[1:22,1], "SE" = summary(currentwatersource)$coefficients[1:22,2], "Pval" = NA)
+
+effect_estims <- rbind(effect_estims, subdat)
+
+water_pod_past <- glm(used_water_pod ~ age + reth2 + gender2 + educ_level2 + marital_status2 + public_benefits + have_health_insurance2 + employ_status2 + years_cityflint + current_housing2 + access_vehicle + water_source2 + number_children + confidants2, family = "binomial", data = mydata_complete)
+
+summary(water_pod_past)
+
+subdat <- data.frame("Outcome" = rep("Used water pod in the past", 22), "Predictor" = c("Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Male (ref: Female)", "Some college (ref: High school or less)", "Associate's degree or more (ref: High school or less", "Separated (ref: Married)", "Single (ref: Married)", "No public benefits (ref: Receives public benefits)", "Unsure if receives public benefits (ref: Receives public benefits)", "Health insured (ref: Uninsured)", "Other employment (ref: Employed)", "Retired (ref: Employed)", "Unemployed (ref: Employed)", "Years lived in Flint", "Rented home (ref: Owned home)", "Unstable housing (ref: Owned home)", "Other housing (ref: Owned home)", "Other water source (ref: Flint tap water)", "Has vehicle (ref: No vehicle)", "Number of children", "Network size"), "Estimate" = summary(water_pod_past)$coefficients[-1, 1], "SE" = summary(water_pod_past)$coefficients[-1, 2], "Pval" = summary(water_pod_past)$coefficients[-1, 4])
+
+effect_estims <- rbind(effect_estims, subdat)
+
+water_pod_now <- glm(get_free_bottled_water ~ age + reth2 + gender2 + educ_level2 + marital_status2 + public_benefits + have_health_insurance2 + employ_status2 + years_cityflint + current_housing2 + access_vehicle + water_source2 + number_children + confidants2, family = "binomial", data = mydata_complete)
+
+summary(water_pod_now)
+
+subdat <- data.frame("Outcome" = rep("Use water pod now", 22), "Predictor" = c("Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Male (ref: Female)", "Some college (ref: High school or less)", "Associate's degree or more (ref: High school or less", "Separated (ref: Married)", "Single (ref: Married)", "No public benefits (ref: Receives public benefits)", "Unsure if receives public benefits (ref: Receives public benefits)", "Health insured (ref: Uninsured)", "Other employment (ref: Employed)", "Retired (ref: Employed)", "Unemployed (ref: Employed)", "Years lived in Flint", "Rented home (ref: Owned home)", "Unstable housing (ref: Owned home)", "Other housing (ref: Owned home)", "Other water source (ref: Flint tap water)", "Has vehicle (ref: No vehicle)", "Number of children", "Network size"), "Estimate" = summary(water_pod_now)$coefficients[-1, 1], "SE" = summary(water_pod_now)$coefficients[-1, 2], "Pval" = summary(water_pod_now)$coefficients[-1, 4])
+
+effect_estims <- rbind(effect_estims, subdat)
+
+waterlinestatus <- glm(as.numeric(water_line_status_after_april2014=="A mailing or official said that my lead/water line did not need to be replaced" | water_line_status_after_april2014=="I was offered a lead/water line replacement but I refused it" | water_line_status_after_april2014=="My lead/water lines were replaced") ~ age + reth2 + gender2 + educ_level2 + marital_status2 + public_benefits + have_health_insurance2 + employ_status2 + years_cityflint + current_housing2 + access_vehicle + number_children + confidants2, family = "binomial", data = filter(mydata_complete, water_source2=="Tap water through the City of Flint"))
+
+summary(waterlinestatus)
+
+subdat <- data.frame("Outcome" = rep("Water line status", 21), "Predictor" = c("Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Male (ref: Female)", "Some college (ref: High school or less)", "Associate's degree or more (ref: High school or less", "Separated (ref: Married)", "Single (ref: Married)", "No public benefits (ref: Receives public benefits)", "Unsure if receives public benefits (ref: Receives public benefits)", "Health insured (ref: Uninsured)", "Other employment (ref: Employed)", "Retired (ref: Employed)", "Unemployed (ref: Employed)", "Years lived in Flint", "Rented home (ref: Owned home)", "Unstable housing (ref: Owned home)", "Other housing (ref: Owned home)", "Has vehicle (ref: No vehicle)", "Number of children", "Network size"), "Estimate" = summary(waterlinestatus)$coefficients[-1, 1], "SE" = summary(waterlinestatus)$coefficients[-1, 2], "Pval" = summary(waterlinestatus)$coefficients[-1, 4])
+
+effect_estims <- rbind(effect_estims, subdat)
+
+water_line_time <- coxph(Surv(water_line_surv, as.numeric(waterline_replaced_eventind)-1) ~ age + reth2 + gender2 + educ_level2 + marital_status2 + public_benefits + have_health_insurance2 + employ_status2 + years_cityflint + current_housing2 + access_vehicle + number_children + confidants2, data = filter(mydata_complete, water_source2=="Tap water through the City of Flint"))
+
+summary(water_line_time)
+
+subdat <- data.frame("Outcome" = rep("Time to water line replacement", 21), "Predictor" = c("Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Male (ref: Female)", "Some college (ref: High school or less)", "Associate's degree or more (ref: High school or less", "Separated (ref: Married)", "Single (ref: Married)", "No public benefits (ref: Receives public benefits)", "Unsure if receives public benefits (ref: Receives public benefits)", "Health insured (ref: Uninsured)", "Other employment (ref: Employed)", "Retired (ref: Employed)", "Unemployed (ref: Employed)", "Years lived in Flint", "Rented home (ref: Owned home)", "Unstable housing (ref: Owned home)", "Other housing (ref: Owned home)", "Has vehicle (ref: No vehicle)", "Number of children", "Network size"), "Estimate" = summary(water_line_time)$coefficients[,1], "SE" = summary(water_line_time)$coefficients[,3], "Pval" = summary(water_line_time)$coefficients[,5])
+
+effect_estims <- rbind(effect_estims, subdat)
+
+drinktap <- polr(drink_tap_in_three_years ~ age + reth2 + gender2 + educ_level2 + marital_status2 + public_benefits + have_health_insurance2 + employ_status2 + years_cityflint + current_housing2 + access_vehicle + water_source2 + number_children + confidants2, Hess = TRUE, data = mydata_complete)
+
+summary(drinktap)
+
+subdat <- data.frame("Outcome" = rep("Likely to drink tap in three years?", 22), "Predictor" = c("Age", "Other race (ref: Black race)", "White race (ref: Black race)", "Male (ref: Female)", "Some college (ref: High school or less)", "Associate's degree or more (ref: High school or less", "Separated (ref: Married)", "Single (ref: Married)", "No public benefits (ref: Receives public benefits)", "Unsure if receives public benefits (ref: Receives public benefits)", "Health insured (ref: Uninsured)", "Other employment (ref: Employed)", "Retired (ref: Employed)", "Unemployed (ref: Employed)", "Years lived in Flint", "Rented home (ref: Owned home)", "Unstable housing (ref: Owned home)", "Other housing (ref: Owned home)", "Other water source (ref: Flint tap water)", "Has vehicle (ref: No vehicle)", "Number of children", "Network size"), "Estimate" = summary(drinktap)$coefficients[1:22,1], "SE" = summary(drinktap)$coefficients[1:22,2], "Pval" = NA)
+
+effect_estims <- rbind(effect_estims, subdat)
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, eval = TRUE}
+effect_estims <- effect_estims[-1,]
+effect_estims$Pval[is.na(effect_estims$Pval)] <- 2*pnorm(abs(effect_estims$Estimate[is.na(effect_estims$Pval)]/effect_estims$SE[is.na(effect_estims$Pval)]), lower.tail = FALSE)
+effect_estims$Lower <- effect_estims$Estimate - 1.96*effect_estims$SE
+effect_estims$Upper <- effect_estims$Estimate + 1.96*effect_estims$SE
+
+pretty_effects <- data.frame("Outcome" = effect_estims$Outcome, "Predictor" = effect_estims$Predictor, "Estimate" = exp(effect_estims$Estimate), "Lower" = exp(effect_estims$Lower), "Upper" = exp(effect_estims$Upper), "BHpvalue" = round(p.adjust(effect_estims$Pval, method="BH"), digits = 2))
+
+pretty_effects$Label <- paste0(round(pretty_effects$Estimate, digits = 1), " (", round(pretty_effects$Lower, digits = 1), ", ", round(pretty_effects$Upper, digits = 1), ")")
+
+pretty_effects2 <- dplyr::select(pretty_effects, Outcome, Predictor, Label, BHpvalue)
+
+pretty_effects2[pretty_effects2$BHpvalue <= 0.05,]
 ```
